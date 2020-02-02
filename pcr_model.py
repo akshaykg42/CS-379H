@@ -48,7 +48,7 @@ def preprocess_sentence(sentence):
 	return ' '.join([porter.stem(word) for word in stop_removed])
 	'''
 
-# Takes in documents, summaries, oracle indices and type (oracle sentence #) and returns X, y (X is each document represented as group of sentence features based on bag-of-words and the length/position of sentence)
+# Takes in documents, summaries, oracle indices and type (oracle sentence #) and returns X, y (X is each document represented as group of sentence features based on bag-of-words and the length/position of sentence and y is index of oracle extracted sentence of the given type)
 def get_x_and_y(pcr_documents, pcr_summaries, pcr_oracles, type):
 	X = []
 	sent_pos = []
