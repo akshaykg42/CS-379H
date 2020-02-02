@@ -149,6 +149,5 @@ X, y, _ = get_x_and_y(pcr_documents, pcr_summaries, pcr_oracles, 0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 trained_params = train(X_train, y_train)
 y_pred = [predict(x, trained_params) for x in X_test]
-print(confusion_matrix(y_test,y_pred))
-print(classification_report(y_test,y_pred))
-print(accuracy_score(y_test, y_pred))
+matches = [i for i in range(len(y_test)) if y_pred[i] == y_test[i]]
+print('Test Accuracy: {}'.format(len(matches)/len(y_test)))
