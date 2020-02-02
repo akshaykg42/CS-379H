@@ -11,6 +11,9 @@ class classifier(nn.Module):
   def __init__(self, input_dim, output_dim):
     super(classifier, self).__init__()
     self.linear = nn.Linear(input_dim, output_dim)
+    self.softmax = nn.Softmax(dim=0)
 
   def forward(self, x):
-        return torch.argmax(F.log_softmax(self.linear(x)))
+  	x = self.linear(x)
+  	x = self.softmax(x)
+  	return torch.argmax(x)
