@@ -24,7 +24,7 @@ def train(iterations, batch_size=16):
 	train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
 	
 	# TODO: Update loss
-	loss = nn.BCEWithLogitsLoss()
+	loss = nn.CrossEntropyLoss()
 	model = OracleSelectorModel().cuda()
 	
 	# TODO: Update optimizer
