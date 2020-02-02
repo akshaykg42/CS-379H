@@ -123,12 +123,12 @@ def gradient_descent(X, y, params, learning_rate, iterations):
 	# Iterate
 	for i in range(iterations):
 		# Get softmax scores for each sentence in each document
-		softmaxs = np.array([np.squeeze(softmax(x @ params)) for x in X])
+		softmaxs = np.squeeze(np.array([np.squeeze(softmax(x @ params)) for x in X]))
 		# For each sentence, multiply features by [score - label] (label is 0 or 1 taken from onehot) and use the avg of the results across all examples to update params
 		params = params - \
 			(learning_rate/n) * \
 			(
-				Xflat.T @ np.hstack(np.squeeze(softmaxs) - y_onehot) # features X [score - label]
+				Xflat.T @ np.hstack(softmaxs - y_onehot) # features X [score - label]
 			).reshape((len(params), 1))
 		# Update cost history
 		cost_history[i] = compute_cost(X, y, params)
@@ -151,3 +151,15 @@ trained_params = train(X_train, y_train)
 y_pred = [predict(x, trained_params) for x in X_test]
 matches = [i for i in range(len(y_test)) if y_pred[i] == y_test[i]]
 print('Test Accuracy: {}'.format(len(matches)/len(y_test)))
+
+
+
+
+
+
+
+
+
+
+
+
