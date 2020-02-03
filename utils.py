@@ -92,4 +92,4 @@ def load(documents, summaries, oracle_indices, sent_type):
 	with open(oracle_indices, 'rb') as f:
 		pcr_oracles = pickle.load(f)
 
-	return get_features_and_labels(documents, summaries, oracles, sent_type)
+	return get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sent_type)

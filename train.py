@@ -6,8 +6,8 @@ import torch
 from torch import nn, optim
 
 # Use the util.load() function to load your dataset
-from .utils import *
-from .model import *
+from utils import *
+from model import *
 
 dirname = os.path.dirname(os.path.abspath(__file__))
 sent_type = 0
