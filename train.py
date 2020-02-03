@@ -13,9 +13,10 @@ dirname = os.path.dirname(os.path.abspath(__file__))
 sent_type = 0
 
 def pad_and_mask(batch_inputs):
-	lengths = [len(example) for example in batch_inputs]
+	batch_size = len(batch_inputs)
+	lengths = np.array([len(example) for example in batch_inputs])
 	max_len = max(lengths)
-	num_features = len(batch_inputs[0].shape[0])
+	num_features = batch_inputs[0].shape[1]
 	padded_inputs = np.zeros((batch_size, max_len, num_features))
 	for i, example in enumerate(batch_inputs):
 		for j, sentence in enumerate(example):
