@@ -8,6 +8,7 @@ import nltk.data
 import re
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
+nltk.download('punkt')
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
 def preprocess_sentence(sentence):
