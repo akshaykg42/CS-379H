@@ -26,6 +26,21 @@ def preprocess_sentence(sentence):
 	tokenized = nltk.word_tokenize(sentence)
 	return ' '.join(tokenized)
 
+# "Capped" at 64 i.e. vector length is 7 (for 1, 2, 4, 8, 16 , 32, 64+)
+def bucketize_sent_lens(number):
+	binary = [int(x) for x in bin(number)[2:]]
+	if(len(binary) < 6):
+		binary = [0] * 6 + binary
+	big = 1 if any(binary[:-6]) else 0
+	return [big] + binary[-6:]
+	# If we just want high order bit then use this:
+	'''
+	index = min(int(math.log(number, 2)), 6)
+	out = [0] * 7
+	out[index] = 1
+	return out[::-1]
+	'''
+
 def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
 	X = []
 	sent_pos = []
@@ -42,7 +57,7 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
 			X_i = [preprocess_sentence(sent) for sent in doc_sents]
 			y.append(positive_index)
 			X.extend(X_i)
-			sent_len.extend([[len(nltk.word_tokenize(sent))] for sent in doc_sents])
+			sent_len.extend([bucketize_sent_lens(len(nltk.word_tokenize(sent))) for sent in doc_sents])
 			sent_pos.extend([[(j+1) / len(doc_sents)] for j in range(len(doc_sents))])
 			doc_lens.append(len(doc_sents))
 		except IndexError:
@@ -55,7 +70,7 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
 	X = np.append(X, sent_pos, axis=1)
 	# Separating into documents again for training
 	splits = list(accumulate(doc_lens))
-	X = np.array([X[splits[i]:splits[i+1]] for i in range(len(splits) - 1)])
+	X = np.array([np.array(X[splits[i]:splits[i+1]]) for i in range(len(splits) - 1)])
 	y = np.array(y)
 	return X, y, indexerror
 

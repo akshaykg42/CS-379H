@@ -8,14 +8,17 @@ import torch.optim as optim
 torch.manual_seed(1)
 	
 class OracleSelectorModel(nn.Module):
-	def __init__(self, input_dim, output_dim):
+	def __init__(self, input_dim, hidden=512):
 		super(OracleSelectorModel, self).__init__()
-		self.linear = nn.Linear(input_dim, output_dim)
-		self.softmax = nn.Softmax(dim=0)
+		self.linear = nn.Linear(input_dim, hidden)
+		self.ReLU = nn.ReLU()
+		self.linear2 = nn.Linear(hidden, 1)
+		self.softmax = nn.Softmax(dim=1)
 
-	def forward(self, x):
+	def forward(self, x, mask=None):
 		x = self.linear(x)
+		x = self.ReLU(x)
+		x = self.linear2(x)
+		x[~mask] = -float("inf")
 		x = self.softmax(x)
-		# Returning softmax would be helpful for calculating loss easily but then can't have fixed output_dim
-		return torch.argmax(x)
-
+		return x, torch.argmax(x, 1)

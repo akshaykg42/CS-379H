@@ -12,6 +12,17 @@ from .model import *
 dirname = os.path.dirname(os.path.abspath(__file__))
 sent_type = 0
 
+def pad_and_mask(batch_inputs):
+	lengths = [len(example) for example in batch_inputs]
+	max_len = max(lengths)
+	num_features = len(batch_inputs[0].shape[0])
+	padded_inputs = np.zeros((batch_size, max_len, num_features))
+	for i, example in enumerate(batch_inputs):
+		for j, sentence in enumerate(example):
+			padded_inputs[i][j] = sentence
+	mask = np.arange(max_len) < lengths[:, None]
+	return mask, padded_inputs#.cuda()
+
 def train(iterations, batch_size=16):
 	'''
 	This is the main training function.
@@ -22,10 +33,10 @@ def train(iterations, batch_size=16):
 	"""
 
 	train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
-	
-	# TODO: Update loss
+	num_features = train_inputs[0].shape[1]
+
 	loss = nn.CrossEntropyLoss()
-	model = OracleSelectorModel().cuda()
+	model = OracleSelectorModel(num_features)#.cuda()
 	
 	# TODO: Update optimizer
 	# optimizer = optim.Adam(model.parameters(), lr = 1e-4)
@@ -35,12 +46,13 @@ def train(iterations, batch_size=16):
 		model.train()
 		# Construct a mini-batch
 		batch = np.random.choice(train_inputs.shape[0], batch_size)
+		batch_inputs = train_inputs[batch]
+		batch_labels = train_labels[batch]
 		'''
 		This gives TypeError: can't convert np.ndarray of type numpy.object_. The only supported types are: float64, float32, float16, int64, int32, int16, int8, uint8, and bool.
 		Since the input is irregular in shape (variable #sentences per document)
 		'''
-		batch_inputs = torch.as_tensor(train_inputs[batch], dtype=torch.float32).cuda()
-		batch_labels = torch.as_tensor(train_labels[batch], dtype=torch.long).cuda()
+		mask, padded_inputs = pad_and_mask(batch_inputs)
 		
 		# zero the gradients (part of pytorch backprop)
 		optimizer.zero_grad()
@@ -48,7 +60,8 @@ def train(iterations, batch_size=16):
 		# Compute the model output and loss (view flattens the input)
 		# Need softmax output to calculate loss but model returns argmax(softmax) which is single value
 		# If we return softmax instead then output_dim cannot be fixed
-		loss_val = loss( model(batch_inputs), batch_labels)
+		batch_scores, pred_labels = model(padded_inputs, mask)
+		loss_val = loss(batch_scores, batch_labels)
 		
 		# Compute the gradient
 		loss_val.backward()
