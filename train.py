@@ -34,11 +34,11 @@ def train(iterations, batch_size=16):
 	"""
 	Load the training data
 	"""
-	with open('X_values.pkl', 'rb') as f:
-		train_inputs = np.load(f, allow_pickle=True)
-	with open('y_values.pkl', 'rb') as f:
-		train_labels = np.load(f, allow_pickle=True)
-	#train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
+	# with open('X_values.pkl', 'rb') as f:
+	# 	train_inputs = np.load(f, allow_pickle=True)
+	# with open('y_values.pkl', 'rb') as f:
+	# 	train_labels = np.load(f, allow_pickle=True)
+	train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
 	num_features = train_inputs[0].shape[1]
 
 	loss = nn.CrossEntropyLoss()
