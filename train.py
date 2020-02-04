@@ -4,6 +4,7 @@ import os
 
 import torch
 from torch import nn, optim
+from sklearn.model_selection import train_test_split
 
 # Use the util.load() function to load your dataset
 from utils import *
@@ -23,8 +24,8 @@ def pad_and_mask(batch_inputs):
 		for j, sentence in enumerate(example):
 			padded_inputs[i][j] = sentence
 	mask = np.arange(max_len) < lengths[:, None]
-	padded_inputs = torch.from_numpy(padded_inputs).float().cuda()
-	mask = torch.from_numpy(mask).cuda()
+	padded_inputs = torch.from_numpy(padded_inputs).float()#.cuda()
+	mask = torch.from_numpy(mask)#.cuda()
 	return mask, padded_inputs
 
 def train(train_inputs, train_labels, iterations, batch_size=16):
@@ -42,7 +43,7 @@ def train(train_inputs, train_labels, iterations, batch_size=16):
 	num_features = train_inputs[0].shape[1]
 
 	loss = nn.NLLLoss()
-	model = OracleSelectorModel(num_features).cuda()
+	model = OracleSelectorModel(num_features)#.cuda()
 
 	# optimizer = optim.Adam(model.parameters(), lr = 1e-4)
 	optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
@@ -52,7 +53,7 @@ def train(train_inputs, train_labels, iterations, batch_size=16):
 		# Construct a mini-batch
 		batch = np.random.choice(train_inputs.shape[0], batch_size)
 		batch_inputs = train_inputs[batch]
-		batch_labels = torch.from_numpy(train_labels[batch]).unsqueeze(1).cuda()
+		batch_labels = torch.from_numpy(train_labels[batch]).unsqueeze(1)#.cuda()
 		mask, padded_inputs = pad_and_mask(batch_inputs)
 		
 		# zero the gradients (part of pytorch backprop)
@@ -77,25 +78,24 @@ def train(train_inputs, train_labels, iterations, batch_size=16):
 def test(test_inputs, test_labels):
 	num_features = test_inputs[0].shape[1]
 	
-	model = OracleSelectorModel(num_features).cuda()
+	model = OracleSelectorModel(num_features)#.cuda()
 	model.load_state_dict(torch.load(os.path.join(dirname, model_name + '.th')))
 	model.eval()
 
 	mask, padded_inputs = pad_and_mask(test_inputs)
 	test_scores, pred_labels = model(padded_inputs, mask)
-
-	accuracy = len([test_labels[i] == pred_labels[i] for i in range(len(test_labels))])/len(test_labels)
+	accuracy = len([i for i in range(len(test_labels)) if test_labels[i] == pred_labels[i].item()])/len(test_labels)
 	print('Accuracy: {}'.format(accuracy))
 
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-i', '--iterations', type=int, default=10000)
+	parser.add_argument('-i', '--iterations', type=int, default=1000)
 	args = parser.parse_args()
 	X, y = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
 	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 	print ('[I] Start training')
 	train(X_train, y_train, args.iterations)
 	print ('[I] Training finished')
-
+	test(X_test, y_test)
 
