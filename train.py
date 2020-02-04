@@ -22,6 +22,8 @@ def pad_and_mask(batch_inputs):
 		for j, sentence in enumerate(example):
 			padded_inputs[i][j] = sentence
 	mask = np.arange(max_len) < lengths[:, None]
+	padded_inputs = torch.from_numpy(padded_inputs)
+	mask = torch.from_numpy(mask)
 	return mask, padded_inputs#.cuda()
 
 def train(iterations, batch_size=16):
@@ -52,10 +54,7 @@ def train(iterations, batch_size=16):
 		batch = np.random.choice(train_inputs.shape[0], batch_size)
 		batch_inputs = train_inputs[batch]
 		batch_labels = train_labels[batch]
-		'''
-		This gives TypeError: can't convert np.ndarray of type numpy.object_. The only supported types are: float64, float32, float16, int64, int32, int16, int8, uint8, and bool.
-		Since the input is irregular in shape (variable #sentences per document)
-		'''
+
 		mask, padded_inputs = pad_and_mask(batch_inputs)
 		
 		# zero the gradients (part of pytorch backprop)
