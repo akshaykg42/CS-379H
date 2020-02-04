@@ -41,13 +41,12 @@ def train(iterations, batch_size=16):
 	train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
 	num_features = train_inputs[0].shape[1]
 
-	loss = nn.CrossEntropyLoss()
+	loss = nn.NLLLoss()
 	model = OracleSelectorModel(num_features).cuda()
-	
-	# TODO: Update optimizer
+
 	# optimizer = optim.Adam(model.parameters(), lr = 1e-4)
 	optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-	
+
 	for iteration in range(iterations):
 		model.train()
 		# Construct a mini-batch
@@ -59,9 +58,7 @@ def train(iterations, batch_size=16):
 		# zero the gradients (part of pytorch backprop)
 		optimizer.zero_grad()
 		
-		# Compute the model output and loss (view flattens the input)
-		# Need softmax output to calculate loss but model returns argmax(softmax) which is single value
-		# If we return softmax instead then output_dim cannot be fixed
+		# Compute the model output and loss
 		batch_scores, pred_labels = model(padded_inputs, mask)
 		loss_val = loss(batch_scores, batch_labels)
 		

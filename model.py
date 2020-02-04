@@ -13,12 +13,12 @@ class OracleSelectorModel(nn.Module):
 		self.linear = nn.Linear(input_dim, hidden)
 		self.ReLU = nn.ReLU()
 		self.linear2 = nn.Linear(hidden, 1)
-		self.softmax = nn.Softmax(dim=1)
+		self.log_softmax = nn.LogSoftmax(dim=1)
 
 	def forward(self, x, mask=None):
 		x = self.linear(x)
 		x = self.ReLU(x)
 		x = self.linear2(x)
 		x[~mask] = -float("inf")
-		x = self.softmax(x)
+		x = self.log_softmax(x)
 		return x, torch.argmax(x, 1)
