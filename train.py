@@ -10,6 +10,7 @@ from utils import *
 from model import *
 
 dirname = os.path.dirname(os.path.abspath(__file__))
+model_name = 'OracleSelectorModel'
 sent_type = 0
 
 def pad_and_mask(batch_inputs):
@@ -26,7 +27,7 @@ def pad_and_mask(batch_inputs):
 	mask = torch.from_numpy(mask).cuda()
 	return mask, padded_inputs
 
-def train(iterations, batch_size=16):
+def train(train_inputs, train_labels, iterations, batch_size=16):
 	'''
 	This is the main training function.
 	'''
@@ -38,7 +39,6 @@ def train(iterations, batch_size=16):
 	# 	train_inputs = np.load(f, allow_pickle=True)
 	# with open('y_values.pkl', 'rb') as f:
 	# 	train_labels = np.load(f, allow_pickle=True)
-	train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
 	num_features = train_inputs[0].shape[1]
 
 	loss = nn.NLLLoss()
@@ -74,13 +74,28 @@ def train(iterations, batch_size=16):
 	# Save the trained model
 	torch.save(model.state_dict(), os.path.join(dirname, model_name + '.th')) # Do NOT modify this line
 
+def test(test_inputs, test_labels):
+	num_features = test_inputs[0].shape[1]
+	
+	model = OracleSelectorModel(num_features).cuda()
+	model.load_state_dict(torch.load(os.path.join(dirname, model_name + '.th')))
+	model.eval()
+
+	mask, padded_inputs = pad_and_mask(test_inputs)
+	test_scores, pred_labels = model(padded_inputs, mask)
+
+	accuracy = len([test_labels[i] == pred_labels[i] for i in range(len(test_labels))])/len(test_labels)
+	print('Accuracy: {}'.format(accuracy))
 
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-i', '--iterations', type=int, default=10000)
 	args = parser.parse_args()
-
+	X, y = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 	print ('[I] Start training')
-	train(args.iterations)
+	train(X_train, y_train, args.iterations)
 	print ('[I] Training finished')
+
+
