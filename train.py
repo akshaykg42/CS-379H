@@ -22,9 +22,9 @@ def pad_and_mask(batch_inputs):
 		for j, sentence in enumerate(example):
 			padded_inputs[i][j] = sentence
 	mask = np.arange(max_len) < lengths[:, None]
-	padded_inputs = torch.from_numpy(padded_inputs)
-	mask = torch.from_numpy(mask)
-	return mask, padded_inputs#.cuda()
+	padded_inputs = torch.from_numpy(padded_inputs).float().cuda()
+	mask = torch.from_numpy(mask).cuda()
+	return mask, padded_inputs
 
 def train(iterations, batch_size=16):
 	'''
@@ -35,14 +35,14 @@ def train(iterations, batch_size=16):
 	Load the training data
 	"""
 	with open('X_values.pkl', 'rb') as f:
-		train_inputs = np.load(f)
-	with open('Y_values.pkl', 'rb') as f:
-		train_labels = np.load(f)
+		train_inputs = np.load(f, allow_pickle=True)
+	with open('y_values.pkl', 'rb') as f:
+		train_labels = np.load(f, allow_pickle=True)
 	#train_inputs, train_labels = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl', sent_type)
 	num_features = train_inputs[0].shape[1]
 
 	loss = nn.CrossEntropyLoss()
-	model = OracleSelectorModel(num_features)#.cuda()
+	model = OracleSelectorModel(num_features).cuda()
 	
 	# TODO: Update optimizer
 	# optimizer = optim.Adam(model.parameters(), lr = 1e-4)
@@ -53,8 +53,7 @@ def train(iterations, batch_size=16):
 		# Construct a mini-batch
 		batch = np.random.choice(train_inputs.shape[0], batch_size)
 		batch_inputs = train_inputs[batch]
-		batch_labels = train_labels[batch]
-
+		batch_labels = torch.from_numpy(train_labels[batch]).unsqueeze(1).cuda()
 		mask, padded_inputs = pad_and_mask(batch_inputs)
 		
 		# zero the gradients (part of pytorch backprop)
