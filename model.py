@@ -1,9 +1,5 @@
 import torch
-from torch.autograd import Variable
-import torchvision.transforms as transforms
-import torchvision.datasets as dsets
 import torch.nn as nn
-import torch.optim as optim
 
 torch.manual_seed(1)
 	
