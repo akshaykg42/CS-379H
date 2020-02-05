@@ -8,11 +8,66 @@ import re
 import numpy as np
 import torch
 from sklearn.feature_extraction.text import CountVectorizer
-from itertools import accumulate
+from itertools import accumulate, permutations
 from rouge import Rouge
+from beam import *
 rouge = Rouge()
+rouge_type = 'rouge-2'
+rouge_metric = 'f'
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
+
+def optimize_oracle_indices(documents, summaries, oracles)
+	for i in range(len(oracles)):
+		summary = summaries[i]
+		document = documents[i]
+		oracle_indices = oracles[i]
+		summary_sentences = tokenizer.tokenize(summary)
+		document_sentences = tokenizer.tokenize(document)
+		try:
+			if(len(oracle_indices) <= 9):
+				options = list(permutations(oracle_indices))
+				best_option = options[0]
+				best_score = sum([rouge.get_scores(summary_sentences[j], document_sentences[options[0][j]])[0][rouge_type][rouge_metric] for j in range(len(summary_sentences))])
+				for option in options:
+					score = sum([rouge.get_scores(summary_sentences[j], document_sentences[option[j]])[0][rouge_type][rouge_metric] for j in range(len(summary_sentences))])
+					if(score > best_score):
+						best_score = score
+						best_option = option
+				oracles[i] = best_option
+		except ValueError:
+			pass
+	return oracles
+
+def get_oracle_indices_and_rouge(documents, summaries):
+	oracles = []
+	rouge_scores = []
+	for k in range(len(summaries)):
+		document = documents[k]
+		summary = summaries[k]
+		document_sentences = tokenizer.tokenize(document)
+		summary_sentences = tokenizer.tokenize(summary)
+		beam = Beam(15)
+		beam.add(('', []), 0)
+		for i in range(len(summary_sentences)):
+			new_beam = Beam(15)
+			for curr in list(beam.get_elts_and_scores()):
+				option, score = curr
+				fragment, indices = option
+				for j in range(len(summary_sentences), len(document_sentences)):
+					if(j not in indices):
+						new_fragment = fragment + ' ' + document_sentences[j]
+						new_score = rouge.get_scores(new_fragment, ' '.join(summary_sentences[:i+1]))[0][rouge_type][rouge_metric]
+						new_indices = [x for x in indices]
+						new_indices.append(j)
+						new_beam.add((new_fragment, new_indices), new_score)
+			beam = new_beam
+		oracle = list(beam.get_elts_and_scores())[0]
+		option, score = oracle
+		text, indices = option
+		oracles.append(indices)
+		rouge_scores.append(score)
+	return oracles, rouge_scores
 
 def get_rouge(hypothesis, reference, rougetype, scoretype):
 	rougetype = 'rouge-' + rougetype
