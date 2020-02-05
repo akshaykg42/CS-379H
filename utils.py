@@ -4,6 +4,7 @@ Module that contains that contains a couple of utility functions
 import pickle
 import nltk
 import nltk.data
+from nltk.corpus import stopwords
 import re
 import numpy as np
 import torch
@@ -15,7 +16,7 @@ rouge = Rouge()
 rouge_type = 'rouge-2'
 rouge_metric = 'f'
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
+#stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
 
 def optimize_oracle_indices(documents, summaries, oracles):
 	for i in range(len(oracles)):
@@ -119,7 +120,7 @@ def bucketize_sent_lens(number):
 	return out[::-1]
 	'''
 
-def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
+def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sentence_type):
 	X = []
 	sent_pos = []
 	sent_len = []
@@ -129,7 +130,7 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
 	for i in range(len(pcr_documents)):
 		doc_sents = tokenizer.tokenize(pcr_documents[i])
 		try:
-			positive_index = pcr_oracles[i][type]
+			positive_index = pcr_oracles[i][sentence_type]
 			y_i = [0] * len(doc_sents)
 			y_i[positive_index] = 1
 			X_i = [preprocess_sentence(sent) for sent in doc_sents]
@@ -141,7 +142,7 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
 		except IndexError:
 			indexerror.append(i)
 	# Converting preprocessed sentences to features
-	vectorizer = CountVectorizer(max_features=5000, min_df=4, max_df=0.99, stop_words=stopwords)
+	vectorizer = CountVectorizer(max_features=7500, min_df=5, max_df=0.99, stop_words=stopwords.words('english'))
 	X = vectorizer.fit_transform(X).toarray()
 	# Adding features for sentence length and position
 	X = np.append(X, sent_len, axis=1)
