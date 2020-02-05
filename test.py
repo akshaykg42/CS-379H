@@ -2,6 +2,9 @@ from model import *
 from utils import *
 import os
 
+dirname = os.path.dirname(os.path.abspath(__file__))
+model_name = 'OracleSelectorModel'
+
 def test(test_inputs, test_labels):
 	print('[II] Start testing')
 	num_features = test_inputs[0].shape[1]
