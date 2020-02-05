@@ -13,7 +13,7 @@ if __name__ == '__main__':
 	X, y = get_features_and_labels(documents, summaries, oracles, sent_type)
 	X_train, X_test, y_train, y_test, indices_train, indices_test = train_test_split(X, y, np.arange(len(X)))
 	train(X_train, y_train)
-	test_scores = test(X_test, y_test).numpy()
+	test_scores = test(X_test, y_test).detach().numpy()
 
 	for i, index in enumerate(indices_test):
 		document = documents[index]
