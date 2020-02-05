@@ -152,6 +152,41 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, type):
 	y = np.array(y)
 	return X, y
 
+def clean_document(document):
+	document = document.replace('Crim.', 'Criminal')
+	document = document.replace('No.', 'Number')
+	document = document.replace('Nos.', 'Numbers')
+	document = document.replace('App.', 'Application')
+	document = document.replace('Tenn.', 'Tennessee')
+	lines = tokenizer.tokenize(document)
+	lines[0] = lines[0][re.search('[a-zA-Z]\d+CCA-[a-zA-Z0-9]{2}-[a-zA-Z0-9]*', lines[0]).start()+14:] if re.search('[a-zA-Z]\d+CCA-{2}-[a-zA-Z0-9]*', lines[0]) != None else lines[0]
+	cleaned = list()
+	# prepare a translation table to remove punctuation
+	table = str.maketrans('', '', string.punctuation)
+	lines = [line[re.search('OPINION', line).start()+7:] if re.search('OPINION', line) != None else line for line in lines]
+	lines = [line.replace('Crim.', 'Criminal') for line in lines]
+	lines = [line.replace('No.', 'Number') for line in lines]
+	lines = [line.replace('Nos.', 'Numbers') for line in lines]
+	lines = [line.replace('App.', 'Application') for line in lines]
+	lines = [line.replace('Tenn.', 'Tennessee') for line in lines]
+	lines = [re.sub('-\s*[0-9]*\s*-', '', line) for line in lines]
+	lines = [re.sub('__+', '', line) for line in lines]
+	lines = [' '.join(line.split()) for line in lines]
+	for line in lines:
+		# tokenize on white space
+		line = line.split()
+		# convert to lower case
+		line = [word.lower() for word in line]
+		# remove punctuation from each token
+		line = [w.translate(table) for w in line]
+		# remove tokens with numbers in them
+		line = [word for word in line if word.isalpha()]
+		# store as string
+		cleaned.append(' '.join(line))
+	# remove empty strings
+	indices_to_keep = [i for i in range(len(lines)) if len(cleaned[i].split()) > 5 or 'affirm' in cleaned[i]]
+	return ' '.join([lines[i] for i in indices_to_keep])
+
 def load(documents, summaries, oracle_indices):
 	with open(documents, 'rb') as f:
 		documents = pickle.load(f)
