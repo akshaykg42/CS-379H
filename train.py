@@ -20,8 +20,8 @@ def train(train_inputs, train_labels, iterations=1000, batch_size=16):
 	loss = nn.NLLLoss()
 	model = OracleSelectorModel(num_features).cuda()
 
-	# optimizer = optim.Adam(model.parameters(), lr = 1e-4)
-	optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+	optimizer = optim.Adam(model.parameters(), lr = 1e-2)
+	# optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
 	for iteration in range(iterations):
 		model.train()
