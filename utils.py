@@ -156,7 +156,7 @@ def clean_document(document):
 	document = document.replace('Crim.', 'Criminal')
 	document = document.replace('No.', 'Number')
 	document = document.replace('Nos.', 'Numbers')
-	document = document.replace('App.', 'Application')
+	document = document.replace('App.', 'Appeal')
 	document = document.replace('Tenn.', 'Tennessee')
 	lines = tokenizer.tokenize(document)
 	lines[0] = lines[0][re.search('[a-zA-Z]\d+CCA-[a-zA-Z0-9]{2}-[a-zA-Z0-9]*', lines[0]).start()+14:] if re.search('[a-zA-Z]\d+CCA-{2}-[a-zA-Z0-9]*', lines[0]) != None else lines[0]
@@ -164,11 +164,6 @@ def clean_document(document):
 	# prepare a translation table to remove punctuation
 	table = str.maketrans('', '', string.punctuation)
 	lines = [line[re.search('OPINION', line).start()+7:] if re.search('OPINION', line) != None else line for line in lines]
-	lines = [line.replace('Crim.', 'Criminal') for line in lines]
-	lines = [line.replace('No.', 'Number') for line in lines]
-	lines = [line.replace('Nos.', 'Numbers') for line in lines]
-	lines = [line.replace('App.', 'Application') for line in lines]
-	lines = [line.replace('Tenn.', 'Tennessee') for line in lines]
 	lines = [re.sub('-\s*[0-9]*\s*-', '', line) for line in lines]
 	lines = [re.sub('__+', '', line) for line in lines]
 	lines = [' '.join(line.split()) for line in lines]
