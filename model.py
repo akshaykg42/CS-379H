@@ -19,6 +19,6 @@ class OracleSelectorModel(nn.Module):
 		x = self.linear(x)
 		x = self.ReLU(x)
 		x = self.linear2(x)
-		x[~mask] = -float("inf")
+		x[mask] = -float("inf")
 		x = self.log_softmax(x)
 		return x, torch.argmax(x, 1)

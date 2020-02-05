@@ -24,8 +24,8 @@ def pad_and_mask(batch_inputs):
 		for j, sentence in enumerate(example):
 			padded_inputs[i][j] = sentence
 	mask = np.arange(max_len) < lengths[:, None]
-	padded_inputs = torch.from_numpy(padded_inputs).float()#.cuda()
-	mask = torch.from_numpy(mask)#.cuda()
+	padded_inputs = torch.from_numpy(padded_inputs).float().cuda()
+	mask = (~(torch.from_numpy(mask).byte())).to(torch.bool).cuda()
 	return mask, padded_inputs
 
 def train(train_inputs, train_labels, iterations, batch_size=16):
@@ -43,7 +43,7 @@ def train(train_inputs, train_labels, iterations, batch_size=16):
 	num_features = train_inputs[0].shape[1]
 
 	loss = nn.NLLLoss()
-	model = OracleSelectorModel(num_features)#.cuda()
+	model = OracleSelectorModel(num_features).cuda()
 
 	# optimizer = optim.Adam(model.parameters(), lr = 1e-4)
 	optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
@@ -53,7 +53,7 @@ def train(train_inputs, train_labels, iterations, batch_size=16):
 		# Construct a mini-batch
 		batch = np.random.choice(train_inputs.shape[0], batch_size)
 		batch_inputs = train_inputs[batch]
-		batch_labels = torch.from_numpy(train_labels[batch]).unsqueeze(1)#.cuda()
+		batch_labels = torch.from_numpy(train_labels[batch]).unsqueeze(1).cuda()
 		mask, padded_inputs = pad_and_mask(batch_inputs)
 		
 		# zero the gradients (part of pytorch backprop)
@@ -78,7 +78,7 @@ def train(train_inputs, train_labels, iterations, batch_size=16):
 def test(test_inputs, test_labels):
 	num_features = test_inputs[0].shape[1]
 	
-	model = OracleSelectorModel(num_features)#.cuda()
+	model = OracleSelectorModel(num_features).cuda()
 	model.load_state_dict(torch.load(os.path.join(dirname, model_name + '.th')))
 	model.eval()
 
