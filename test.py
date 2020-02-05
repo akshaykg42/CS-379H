@@ -17,3 +17,4 @@ def test(test_inputs, test_labels):
 	test_scores, pred_labels = model(padded_inputs, mask)
 	accuracy = len([i for i in range(len(test_labels)) if test_labels[i] == pred_labels[i].item()])/len(test_labels)
 	print('[II] Accuracy: {}'.format(accuracy))
+	return test_scores
