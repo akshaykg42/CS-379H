@@ -15,7 +15,7 @@ from rouge import Rouge
 from beam import *
 rouge = Rouge()
 rouge_type = 'rouge-1'
-rouge_metric = 'r'
+rouge_metric = 'f'
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 #stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
 #pcr_documents = [' '.join(tokenizer.tokenize(doc)[len(pcr_oracles[i]):]) if re.search('\W\s*¶\s*\d\s*\W', doc) is None else doc for i, doc in enumerate(pcr_documents)]
@@ -30,11 +30,12 @@ def get_vanilla_oracles(documents, summaries):
 		for summary_sentence in summary_sentences:
 			best_score = -1.0
 			oracle_sentence = -1
-			for j in range(len(summary_sentences), len(document_sentences)):
-				score = rouge.get_scores(summary_sentence, document_sentences[j])[0][rouge_type][rouge_metric]
-				if(score > best_score):
-					oracle_sentence = j
-					best_score = score
+			for j in range(len(document_sentences)):
+				if(j not in oracle):
+					score = rouge.get_scores(summary_sentence, document_sentences[j])[0][rouge_type][rouge_metric]
+					if(score > best_score):
+						oracle_sentence = j
+						best_score = score
 			oracle.append(oracle_sentence)
 		oracles.append(oracle)
 	return oracles
