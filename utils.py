@@ -18,8 +18,10 @@ rouge_type = 'rouge-1'
 rouge_metric = 'r'
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 #stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
+#pcr_documents = [' '.join(tokenizer.tokenize(doc)[len(pcr_oracles[i]):]) if re.search('\W\s*¶\s*\d\s*\W', doc) is None else doc for i, doc in enumerate(pcr_documents)]
 
-def get_vanilla_oracle(documents, summaries):
+
+def get_vanilla_oracles(documents, summaries):
 	oracles = []
 	for document, summary in list(zip(documents, summaries)):
 		document_sentences = tokenizer.tokenize(document)
@@ -37,7 +39,7 @@ def get_vanilla_oracle(documents, summaries):
 		oracles.append(oracle)
 	return oracles
 
-def optimize_beam_oracle(documents, summaries, oracles):
+def optimize_beam_oracles(documents, summaries, oracles):
 	for document, summary, oracle_indices in list(zip(documents, summaries, oracles)):
 		summary_sentences = tokenizer.tokenize(summary)
 		document_sentences = tokenizer.tokenize(document)
@@ -56,7 +58,7 @@ def optimize_beam_oracle(documents, summaries, oracles):
 			pass
 	return oracles
 
-def get_beam_oracle(documents, summaries):
+def get_beam_oracles(documents, summaries):
 	oracles = []
 	rouge_scores = []
 	for document, summary in list(zip(documents, summaries)):
@@ -173,12 +175,7 @@ def clean_document(document):
 	document = document.replace('Nos.', 'Numbers')
 	document = document.replace('App.', 'Appeal')
 	document = document.replace('Tenn.', 'Tennessee')
-	if('[¶1]' in document):
-		document = document[document.find('[¶1]')+4:]
-	elif('{¶1}' in document):
-		document = document[document.find('{¶1}')+4:]
-	elif('{ ¶1 }' in document):
-		document = document[document.find('{ ¶1 }')+6:]
+	document = document[re.search('\W\s*¶\s*1\s*\W', document).end():] if re.search('\W\s*¶\s*1\s*\W', document) is not None else document
 	lines = tokenizer.tokenize(document)
 	lines[0] = lines[0][re.search('[a-zA-Z]\d+CCA-[a-zA-Z0-9]{2}-[a-zA-Z0-9]{1,3}', lines[0]).end():] if re.search('[a-zA-Z]\d+CCA-[a-zA-Z0-9]{2}-[a-zA-Z0-9]{1,3}', lines[0]) != None else lines[0]
 	cleaned = list()
