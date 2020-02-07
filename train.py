@@ -19,13 +19,13 @@ def train(train_inputs, train_labels, val_inputs, val_labels, patience=20, itera
 	num_features = train_inputs[0].shape[1]
 
 	# to track the training loss as the model trains
-    train_losses = []
-    # to track the validation loss as the model trains
-    valid_losses = []
-    # to track the average training loss per epoch as the model trains
-    avg_train_losses = []
-    # to track the average validation loss per epoch as the model trains
-    avg_valid_losses = [] 
+	train_losses = []
+	# to track the validation loss as the model trains
+	valid_losses = []
+	# to track the average training loss per epoch as the model trains
+	avg_train_losses = []
+	# to track the average validation loss per epoch as the model trains
+	avg_valid_losses = [] 
 
 	loss = nn.NLLLoss()
 	model = OracleSelectorModel(num_features).cuda()
@@ -66,31 +66,31 @@ def train(train_inputs, train_labels, val_inputs, val_labels, patience=20, itera
 		valid_losses.append(val_loss.item())
 
 		# Print training/validation statistics 
-        # Calculate average loss over an epoch
+		# Calculate average loss over an epoch
 		train_loss = np.average(train_losses)
-        valid_loss = np.average(valid_losses)
-        avg_train_losses.append(train_loss)
-        avg_valid_losses.append(valid_loss)
+		valid_loss = np.average(valid_losses)
+		avg_train_losses.append(train_loss)
+		avg_valid_losses.append(valid_loss)
 
-        iter_len = len(str(iterations))
-        
-        print_msg = (f'[{iteration:>{iter_len}}/{iterations:>{iter_len}}] ' +
-                     f'train_loss: {train_loss:.5f} ' +
-                     f'valid_loss: {valid_loss:.5f}')
+		iter_len = len(str(iterations))
+		
+		print_msg = (f'[{iteration:>{iter_len}}/{iterations:>{iter_len}}] ' +
+					 f'train_loss: {train_loss:.5f} ' +
+					 f'valid_loss: {valid_loss:.5f}')
 
-       	print(print_msg)
+		print(print_msg)
 
-        # clear lists to track next epoch
-        train_losses = []
-        valid_losses = []
+		# clear lists to track next epoch
+		train_losses = []
+		valid_losses = []
 
-        # early_stopping needs the validation loss to check if it has decresed, 
-        # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+		# early_stopping needs the validation loss to check if it has decresed, 
+		# and if it has, it will make a checkpoint of the current model
+		early_stopping(valid_loss, model)
 
-        if early_stopping.early_stop:
-            print("Early stopping")
-            break
+		if early_stopping.early_stop:
+			print("Early stopping")
+			break
 
 	print ('[I] Training finished')
 
