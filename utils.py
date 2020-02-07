@@ -145,8 +145,8 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sentence_
 	y = []
 	indexerror = []
 	for i in range(len(pcr_documents)):
-		doc_sents = tokenizer.tokenize(pcr_documents[i])
-		try:
+		if(sentence_type < 0 or len(pcr_oracles[i]) > sentence_type):
+			doc_sents = tokenizer.tokenize(pcr_documents[i])
 			positive_index = pcr_oracles[i][sentence_type]
 			y_i = [0] * len(doc_sents)
 			y_i[positive_index] = 1
@@ -156,10 +156,10 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sentence_
 			sent_len.extend([bucketize_sent_lens(len(nltk.word_tokenize(sent))) for sent in doc_sents])
 			sent_pos.extend([[(j+1) / len(doc_sents)] for j in range(len(doc_sents))])
 			doc_lens.append(len(doc_sents))
-		except IndexError:
+		else:
 			indexerror.append(i)
 	# Converting preprocessed sentences to features
-	vectorizer = CountVectorizer(max_features=7500, min_df=5, max_df=0.99, stop_words=stopwords.words('english'))
+	vectorizer = CountVectorizer(max_features=7500, min_df=10, max_df=0.99, stop_words=stopwords.words('english'))
 	X = vectorizer.fit_transform(X).toarray()
 	# Adding features for sentence length and position
 	X = np.append(X, sent_len, axis=1)
@@ -168,7 +168,9 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sentence_
 	splits = list(accumulate(doc_lens))
 	X = np.array([np.array(X[splits[i]:splits[i+1]]) for i in range(len(splits) - 1)])
 	y = np.array(y)
-	return X, y
+	if(len(indexerror) != 0):
+		print('These document numbers are too short: ' + str(indexerror))
+	return X, y, indexerror
 
 def clean_document(document):
 	document = document.replace('Crim.', 'Criminal')

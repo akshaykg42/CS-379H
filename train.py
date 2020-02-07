@@ -7,7 +7,7 @@ from torch import nn, optim
 dirname = os.path.dirname(os.path.abspath(__file__))
 model_name = 'OracleSelectorModel'
 
-def train(train_inputs, train_labels, iterations=1000, batch_size=16):
+def train(train_inputs, train_labels, iterations=500, batch_size=16):
 	'''
 	This is the main training function.
 	'''
