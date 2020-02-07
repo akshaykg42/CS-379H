@@ -60,6 +60,7 @@ def train(train_inputs, train_labels, val_inputs, val_labels, patience=20, itera
 		model.eval()
 
 		# Compute the validation output and loss
+		val_labels = torch.from_numpy(val_labels).unsqueeze(1).cuda()
 		val_mask, padded_val_inputs = pad_and_mask(val_inputs)
 		val_scores, val_pred_labels = model(padded_val_inputs, val_mask)
 		val_loss = loss(val_scores, val_labels)
