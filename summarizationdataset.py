@@ -31,7 +31,6 @@ class SummarizationDataset(Dataset):
 		return len(self.indices)
 
 	def __getitem__(self, index):
-		index = self.indices[index]
 		X = torch.load(data_dir + 'processed/documents/' + index + '.npy')
 		y = self.labels[index]
 		return X, y
