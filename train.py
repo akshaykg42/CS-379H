@@ -16,7 +16,7 @@ def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
 	"""
 	Load the training data
 	"""
-	num_features = train_inputs[0].shape[1]
+	num_features = 7508
 
 	# to track the training loss as the model trains
 	train_losses = []
