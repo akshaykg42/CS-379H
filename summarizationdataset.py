@@ -1,5 +1,7 @@
 import torch
 from torch.utils import data
+from torch.utils.data import Dataset, DataLoader
+
 
 data_dir = 'pcr_data/'
 
