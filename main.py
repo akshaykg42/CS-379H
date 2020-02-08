@@ -4,7 +4,6 @@ from train import *
 from test import *
 from summarizationdataset import *
 import math
-from sklearn.model_selection import train_test_split
 
 sent_type = 0
 BATCH_SIZE = 16
