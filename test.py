@@ -7,7 +7,7 @@ model_name = 'OracleSelectorModel'
 
 def test(test_loader):
 	print('[II] Start testing')
-	num_features = test_inputs[0].shape[1]
+	num_features = 4127
 	
 	model = OracleSelectorModel(num_features).cuda()
 	model.load_state_dict(torch.load(os.path.join(dirname, model_name + '.th')))
@@ -17,7 +17,10 @@ def test(test_loader):
 	for inputs, mask, targets in test_loader:
 		scores, preds = model(inputs, mask)
 		for i, pred in enumerate(preds):
-			accuracy.append(pred == targets[i])
+			if(pred == targets[i]):
+				accuracy.append(1)
+			else:
+				accuracy.append(0)
 	accuracy = sum(accuracy)/len(accuracy)
 	print('[II] Accuracy: {}'.format(accuracy))
 	return scores

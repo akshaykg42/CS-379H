@@ -8,7 +8,7 @@ from torch import nn, optim
 dirname = os.path.dirname(os.path.abspath(__file__))
 model_name = 'OracleSelectorModel'
 
-def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
+def train(train_loader, valid_loader, patience=7, n_epochs=100, batch_size=16):
 	'''
 	This is the main training function.
 	'''
@@ -16,7 +16,7 @@ def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
 	"""
 	Load the training data
 	"""
-	num_features = 7508
+	num_features = 4127
 
 	# to track the training loss as the model trains
 	train_losses = []
@@ -41,7 +41,7 @@ def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
 			optimizer.zero_grad()
 			scores, preds = model(inputs, mask)
 			train_loss = loss(scores, targets)
-			loss.backward()
+			train_loss.backward()
 			optimizer.step()
 			train_losses.append(train_loss.item())
 
@@ -72,6 +72,10 @@ def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
 		# early_stopping needs the validation loss to check if it has decresed, 
 		# and if it has, it will make a checkpoint of the current model
 		early_stopping(valid_loss, model)
+		
+		if early_stopping.early_stop:
+			print("Early stopping")
+			break
 
 	print ('[I] Training finished')
 

@@ -159,6 +159,7 @@ def generate_processed_data():
 	X = np.array([np.array(X[splits[i]:splits[i+1]]) for i in range(len(splits) - 1)])
 	for i in range(len(X)):
 		np.save(data_dir + 'processed/documents/' + str(i), X[i])
+	return len(X[0][0])
 
 def clean_document(document):
 	document = document.replace('Crim.', 'Criminal')
