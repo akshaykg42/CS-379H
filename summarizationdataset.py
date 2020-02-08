@@ -24,6 +24,8 @@ def collate_batch(batch):
 
 class SummarizationDataset(Dataset):
 	def __init__(self, X_indices, y):
+		print(indices)
+		print(labels)
 		self.indices = X_indices
 		self.labels  = y
 
@@ -31,7 +33,8 @@ class SummarizationDataset(Dataset):
 		return len(self.indices)
 
 	def __getitem__(self, index):
-		X = torch.load(data_dir + 'processed/documents/' + index + '.npy')
+		index = self.indices[index]
+		X = torch.load(data_dir + 'processed/documents/' + str(index) + '.npy')
 		y = self.labels[index]
 		return X, y
 
