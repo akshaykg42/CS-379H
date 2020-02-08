@@ -2,38 +2,23 @@ from utils import *
 from model import *
 from train import *
 from test import *
+from summarizationdataset import *
 import math
 from sklearn.model_selection import train_test_split
 
-sent_type = 0 
+sent_type = 0
+BATCH_SIZE = 16
 
 if __name__ == '__main__':
 	print('Loading data...')
-	documents, summaries, oracles = load('pcr_documents.pkl', 'pcr_summaries.pkl', 'pcr_oracles.pkl')
-	X, y, failed_indices = get_features_and_labels(documents, summaries, oracles, sent_type)
-	X_train, X_test, y_train, y_test, indices_train, indices_test = train_test_split(X, y, np.arange(len(X)), test_size = 0.2)
-	X_train, X_val, y_train, y_val, indices_train, indices_val = train_test_split(X_train, y_train, np.arange(len(X_train)), test_size = 0.25)
-	pickle.dump(X_train, open('X_train.pkl', 'wb'))
-	pickle.dump(X_val, open('X_val.pkl', 'wb'))
-	pickle.dump(X_test, open('X_test.pkl', 'wb'))
-	pickle.dump(y_train, open('y_train.pkl', 'wb'))
-	pickle.dump(y_val, open('y_val.pkl', 'wb'))
-	pickle.dump(y_test, open('y_test.pkl', 'wb'))
-	pickle.dump(indices_train, open('indices_train.pkl', 'wb'))
-	pickle.dump(indices_val, open('indices_val.pkl', 'wb'))
-	pickle.dump(indices_test, open('indices_test.pkl', 'wb'))
-	pickle.dump(failed_indices, open('failed_indices.pkl', 'wb'))	
-	train(X_train, y_train, X_val, y_val)
-	#X_test = pickle.load(open('X_test.pkl', 'rb'))
-	#y_test = pickle.load(open('y_test.pkl', 'rb'))
-	#indices_train = pickle.load(open('indices_train.pkl', 'rb'))
-	#indices_test = pickle.load(open('indices_test.pkl', 'rb'))
-	#failed_indices = pickle.load(open('failed_indices.pkl', 'rb'))
-	test_scores = test(X_test, y_test).cpu().detach().numpy()
+	documents, summaries, oracles = load()
+	train_loader, test_loader, valid_loader, available_indices = create_datasets(oracles, sent_type, BATCH_SIZE)
+	train(train_loader, valid_loader)
+	test_scores = test(test_loader).cpu().detach().numpy()
 	
-	documents = [documents[i] for i in range(len(documents)) if i not in failed_indices]
-	summaries = [summaries[i] for i in range(len(summaries)) if i not in failed_indices]
-	oracles = [oracles[i] for i in range(len(oracles)) if i not in failed_indices]
+	documents = [documents[i] for i in range(len(documents)) if i in available_indices]
+	summaries = [summaries[i] for i in range(len(summaries)) if i in available_indices]
+	oracles = [oracles[i] for i in range(len(oracles)) if i in available_indices]
 
 	for i, index in enumerate(indices_test):
 		document = documents[index]

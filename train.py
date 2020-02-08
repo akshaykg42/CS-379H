@@ -8,7 +8,7 @@ from torch import nn, optim
 dirname = os.path.dirname(os.path.abspath(__file__))
 model_name = 'OracleSelectorModel'
 
-def train(train_inputs, train_labels, val_inputs, val_labels, patience=20, iterations=1000, batch_size=16):
+def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
 	'''
 	This is the main training function.
 	'''
@@ -30,68 +30,48 @@ def train(train_inputs, train_labels, val_inputs, val_labels, patience=20, itera
 	loss = nn.NLLLoss()
 	model = OracleSelectorModel(num_features).cuda()
 	early_stopping = EarlyStopping(patience=patience, verbose=True)
-	val_labels = torch.from_numpy(val_labels).unsqueeze(1).cuda()
 
 	optimizer = optim.Adam(model.parameters(), lr = 1e-2)
 	# optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
-	for iteration in range(iterations):
+	for epoch in range(1, n_epochs + 1):
 		model.train()
-		# Construct a mini-batch
-		batch = np.random.choice(train_inputs.shape[0], batch_size)
-		batch_inputs = train_inputs[batch]
-		batch_labels = torch.from_numpy(train_labels[batch]).unsqueeze(1).cuda()
-		mask, padded_inputs = pad_and_mask(batch_inputs)
-		
-		# zero the gradients (part of pytorch backprop)
-		optimizer.zero_grad()
-		
-		# Compute the model output and loss
-		batch_scores, pred_labels = model(padded_inputs, mask)
-		train_loss = loss(batch_scores, batch_labels)
-		train_losses.append(train_loss.item())
-		
-		# Compute the gradient
-		train_loss.backward()
-		
-		# Update the weights
-		optimizer.step()
 
-		# Prep model for evaluation
+		for batch, (inputs, mask, targets) in enumerate(train_loader):
+			optimizer.zero_grad()
+			scores, preds = model(inputs, mask)
+			train_loss = loss(scores, targets)
+			loss.backward()
+			optimizer.step()
+			train_losses.append(train_loss.item())
+
 		model.eval()
 
-		# Compute the validation output and loss
-		val_mask, padded_val_inputs = pad_and_mask(val_inputs)
-		val_scores, val_pred_labels = model(padded_val_inputs, val_mask)
-		val_loss = loss(val_scores, val_labels)
-		valid_losses.append(val_loss.item())
+		for inputs, mask, targets in valid_loader:
+			scores, preds = model(inputs, mask)
+			valid_loss = loss(scores, targets)
+			valid_losses.append(valid_loss.item())
 
-		# Print training/validation statistics 
-		# Calculate average loss over an epoch
 		train_loss = np.average(train_losses)
-		valid_loss = np.average(valid_losses)
-		avg_train_losses.append(train_loss)
-		avg_valid_losses.append(valid_loss)
+        valid_loss = np.average(valid_losses)
+        avg_train_losses.append(train_loss)
+        avg_valid_losses.append(valid_loss)
 
-		iter_len = len(str(iterations))
-		
-		print_msg = (f'[{iteration:>{iter_len}}/{iterations:>{iter_len}}] ' +
-					 f'train_loss: {train_loss:.5f} ' +
-					 f'valid_loss: {valid_loss:.5f}')
+        epoch_len = len(str(n_epochs))
+        
+        print_msg = (f'[{epoch:>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
+                     f'train_loss: {train_loss:.5f} ' +
+                     f'valid_loss: {valid_loss:.5f}')
 
-		print(print_msg)
-
-		# clear lists to track next epoch
-		train_losses = []
-		valid_losses = []
-
-		# early_stopping needs the validation loss to check if it has decresed, 
-		# and if it has, it will make a checkpoint of the current model
-		early_stopping(valid_loss, model)
-
-		if early_stopping.early_stop:
-			print("Early stopping")
-			break
+       	print(print_msg)
+        
+        # clear lists to track next epoch
+        train_losses = []
+        valid_losses = []
+        
+        # early_stopping needs the validation loss to check if it has decresed, 
+        # and if it has, it will make a checkpoint of the current model
+        early_stopping(valid_loss, model)
 
 	print ('[I] Training finished')
 

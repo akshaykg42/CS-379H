@@ -16,10 +16,10 @@ from beam import *
 rouge = Rouge()
 rouge_type = 'rouge-1'
 rouge_metric = 'f'
+data_dir = 'pcr_data/'
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 #stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
 #pcr_documents = [' '.join(tokenizer.tokenize(doc)[len(pcr_oracles[i]):]) if re.search('\W\s*¶\s*\d\s*\W', doc) is None else doc for i, doc in enumerate(pcr_documents)]
-
 
 def get_vanilla_oracles(documents, summaries):
 	oracles = []
@@ -137,27 +137,17 @@ def bucketize_sent_lens(number):
 	return out[::-1]
 	'''
 
-def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sentence_type):
-	X = []
-	sent_pos = []
-	sent_len = []
-	doc_lens = [0]
-	y = []
-	indexerror = []
-	for i in range(len(pcr_documents)):
-		if(sentence_type < 0 or len(pcr_oracles[i]) > sentence_type):
-			doc_sents = tokenizer.tokenize(pcr_documents[i])
-			positive_index = pcr_oracles[i][sentence_type]
-			y_i = [0] * len(doc_sents)
-			y_i[positive_index] = 1
-			X_i = [preprocess_sentence(sent) for sent in doc_sents]
-			y.append(positive_index)
-			X.extend(X_i)
-			sent_len.extend([bucketize_sent_lens(len(nltk.word_tokenize(sent))) for sent in doc_sents])
-			sent_pos.extend([[(j+1) / len(doc_sents)] for j in range(len(doc_sents))])
-			doc_lens.append(len(doc_sents))
-		else:
-			indexerror.append(i)
+def generate_processed_data():
+	documents, summaries, oracles = load()
+	X, sent_pos, sent_len, doc_lens = [], [], [], []
+	doc_lens.append(0)
+	for i in range(len(documents)):
+		doc_sents = tokenizer.tokenize(documents[i])
+		X_i = [preprocess_sentence(sent) for sent in doc_sents]
+		X.extend(X_i)
+		sent_len.extend([bucketize_sent_lens(len(nltk.word_tokenize(sent))) for sent in doc_sents])
+		sent_pos.extend([[(j+1) / len(doc_sents)] for j in range(len(doc_sents))])
+		doc_lens.append(len(doc_sents))
 	# Converting preprocessed sentences to features
 	vectorizer = CountVectorizer(max_features=7500, min_df=10, max_df=0.99, stop_words=stopwords.words('english'))
 	X = vectorizer.fit_transform(X).toarray()
@@ -167,10 +157,8 @@ def get_features_and_labels(pcr_documents, pcr_summaries, pcr_oracles, sentence_
 	# Separating into documents again for training
 	splits = list(accumulate(doc_lens))
 	X = np.array([np.array(X[splits[i]:splits[i+1]]) for i in range(len(splits) - 1)])
-	y = np.array(y)
-	if(len(indexerror) != 0):
-		print('These document numbers are too short: ' + str(indexerror))
-	return X, y, indexerror
+	for i in range(len(X)):
+		np.save(data_dir + 'processed/documents/' + str(i), X[i])
 
 def clean_document(document):
 	document = document.replace('Crim.', 'Criminal')
@@ -203,14 +191,14 @@ def clean_document(document):
 	indices_to_keep = [i for i in range(len(lines)) if len(cleaned[i].split()) > 5 or 'affirm' in cleaned[i]]
 	return ' '.join([lines[i] for i in indices_to_keep])
 
-def load(documents, summaries, oracle_indices):
-	with open(documents, 'rb') as f:
+def load():
+	with open(data_dir + '/raw/documents.pkl', 'rb') as f:
 		documents = pickle.load(f)
 
-	with open(summaries, 'rb') as f:
+	with open(data_dir + '/raw/summaries.pkl', 'rb') as f:
 		summaries = pickle.load(f)
 
-	with open(oracle_indices, 'rb') as f:
+	with open(data_dir + '/raw/oracles.pkl', 'rb') as f:
 		oracles = pickle.load(f)
 
 	return documents, summaries, oracles
