@@ -53,25 +53,25 @@ def train(train_loader, valid_loader, patience=20, n_epochs=100, batch_size=16):
 			valid_losses.append(valid_loss.item())
 
 		train_loss = np.average(train_losses)
-        valid_loss = np.average(valid_losses)
-        avg_train_losses.append(train_loss)
-        avg_valid_losses.append(valid_loss)
+		valid_loss = np.average(valid_losses)
+		avg_train_losses.append(train_loss)
+		avg_valid_losses.append(valid_loss)
 
-        epoch_len = len(str(n_epochs))
-        
-        print_msg = (f'[{epoch:>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
-                     f'train_loss: {train_loss:.5f} ' +
-                     f'valid_loss: {valid_loss:.5f}')
+		epoch_len = len(str(n_epochs))
+		
+		print_msg = (f'[{epoch:>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
+					 f'train_loss: {train_loss:.5f} ' +
+					 f'valid_loss: {valid_loss:.5f}')
 
-       	print(print_msg)
-        
-        # clear lists to track next epoch
-        train_losses = []
-        valid_losses = []
-        
-        # early_stopping needs the validation loss to check if it has decresed, 
-        # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+		print(print_msg)
+		
+		# clear lists to track next epoch
+		train_losses = []
+		valid_losses = []
+		
+		# early_stopping needs the validation loss to check if it has decresed, 
+		# and if it has, it will make a checkpoint of the current model
+		early_stopping(valid_loss, model)
 
 	print ('[I] Training finished')
 

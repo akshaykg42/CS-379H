@@ -45,29 +45,29 @@ def create_datasets(oracles, sent_type, batch_size):
 	indices_train, indices_test, labels_train, labels_test = train_test_split(available_indices, labels, test_size=0.2)
 	indices_train, indices_val, labels_train, labels_val = train_test_split(indices_train, labels_train, test_size=0.25)
 
-    # choose the training and test datasets
-    train_data = SummarizationDataset(indices_train, labels_train)
-    valid_data = SummarizationDataset(indices_val, labels_val)
-    test_data = SummarizationDataset(indices_test, labels_test)
-    
-    # define samplers for obtaining training and validation batches
-    train_sampler = SubsetRandomSampler(indices_train)
-    valid_sampler = SubsetRandomSampler(indices_val)
-    
-    # load training data in batches
-    train_loader = torch.utils.data.DataLoader(train_data,
-                                               batch_size=batch_size,
-                                               sampler=train_sampler,
-                                               collate_fn=collate_batch)
-    
-    # load validation data in batches
-    valid_loader = torch.utils.data.DataLoader(valid_data,
-                                               batch_size=len(indices_val),
-                                               sampler=valid_sampler,
-                                               collate_fn=collate_batch)
-    
-    # load test data in batches
-    test_loader = torch.utils.data.DataLoader(test_data,
-                                              batch_size=len(indices_test))
-    
-    return train_loader, test_loader, valid_loader, set(available_indices)
+	# choose the training and test datasets
+	train_data = SummarizationDataset(indices_train, labels_train)
+	valid_data = SummarizationDataset(indices_val, labels_val)
+	test_data = SummarizationDataset(indices_test, labels_test)
+	
+	# define samplers for obtaining training and validation batches
+	train_sampler = SubsetRandomSampler(indices_train)
+	valid_sampler = SubsetRandomSampler(indices_val)
+	
+	# load training data in batches
+	train_loader = torch.utils.data.DataLoader(train_data,
+												batch_size=batch_size,
+												sampler=train_sampler,
+												collate_fn=collate_batch)
+	
+	# load validation data in batches
+	valid_loader = torch.utils.data.DataLoader(valid_data,
+												batch_size=len(indices_val),
+												sampler=valid_sampler,
+												collate_fn=collate_batch)
+	
+	# load test data in batches
+	test_loader = torch.utils.data.DataLoader(test_data,
+												batch_size=len(indices_test))
+	
+	return train_loader, test_loader, valid_loader, set(available_indices)
