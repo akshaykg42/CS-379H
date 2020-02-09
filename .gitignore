@@ -1,6 +1,6 @@
 .DS_Store
 .DS_Store?
-.npy
-.pyc
-.pt
-.th
+*.npy
+*.pyc
+*.pt
+*.th
