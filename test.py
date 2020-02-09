@@ -5,9 +5,8 @@ import os
 dirname = os.path.dirname(os.path.abspath(__file__))
 model_name = 'OracleSelectorModel'
 
-def test(test_loader):
+def test(test_loader, num_features):
 	print('[II] Start testing')
-	num_features = 4127
 	
 	model = OracleSelectorModel(num_features).cuda()
 	model.load_state_dict(torch.load(os.path.join(dirname, model_name + '.th')))

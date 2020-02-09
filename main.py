@@ -6,16 +6,20 @@ from summarizationdataset import *
 import math
 
 data_dir = 'pcr_data/'
-sent_type = -1
+sent_type = 0
 BATCH_SIZE = 16
 EPOCHS = 100
+FEATURES = None
 
 if __name__ == '__main__':
 	print('Loading data...')
 	documents, summaries, oracles = load(data_dir)
 	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE)
-	train(train_loader, valid_loader, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
-	test_scores = test(test_loader).cpu().detach().numpy()
+	for inputs, mask, targets in train_loader:
+		FEATURES = inputs[0].shape[1]
+		break
+	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
+	test_scores = test(test_loader, num_features=FEATURES).cpu().detach().numpy()
 	
 	documents = [documents[i] for i in range(len(documents)) if i in available_indices]
 	summaries = [summaries[i] for i in range(len(summaries)) if i in available_indices]

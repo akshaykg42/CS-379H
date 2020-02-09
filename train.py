@@ -8,7 +8,7 @@ from torch import nn, optim
 dirname = os.path.dirname(os.path.abspath(__file__))
 model_name = 'OracleSelectorModel'
 
-def train(train_loader, valid_loader, n_epochs, batch_size, patience=7):
+def train(train_loader, valid_loader, num_features, n_epochs, batch_size, patience=7):
 	'''
 	This is the main training function.
 	'''
@@ -16,7 +16,6 @@ def train(train_loader, valid_loader, n_epochs, batch_size, patience=7):
 	"""
 	Load the training data
 	"""
-	num_features = 4127
 
 	# to track the training loss as the model trains
 	train_losses = []

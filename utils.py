@@ -137,7 +137,7 @@ def bucketize_sent_lens(number):
 	'''
 
 def generate_processed_data(data_dir):
-	documents, summaries, oracles = (data_dir)
+	documents, summaries, oracles = load(data_dir)
 	X, sent_pos, sent_len, doc_lens = [], [], [], []
 	doc_lens.append(0)
 	for i in range(len(documents)):
@@ -148,7 +148,7 @@ def generate_processed_data(data_dir):
 		sent_pos.extend([[(j+1) / len(doc_sents)] for j in range(len(doc_sents))])
 		doc_lens.append(len(doc_sents))
 	# Converting preprocessed sentences to features
-	vectorizer = CountVectorizer(max_features=7500, min_df=10, max_df=0.99, stop_words=stopwords.words('english'))
+	vectorizer = CountVectorizer(max_features=10000, min_df=5, max_df=0.99, stop_words=stopwords.words('english'), ngram_range=(1, 2))
 	X = vectorizer.fit_transform(X).toarray()
 	# Adding features for sentence length and position
 	X = np.append(X, sent_len, axis=1)
