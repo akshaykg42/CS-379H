@@ -21,6 +21,7 @@ def test(test_loader):
 				accuracy.append(1)
 			else:
 				accuracy.append(0)
+	print(len(accuracy))
 	accuracy = sum(accuracy)/len(accuracy)
 	print('[II] Accuracy: {}'.format(accuracy))
 	return scores

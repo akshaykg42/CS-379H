@@ -5,13 +5,13 @@ from test import *
 from summarizationdataset import *
 import math
 
-sent_type = 0
+sent_type = -1
 BATCH_SIZE = 16
 
 if __name__ == '__main__':
 	print('Loading data...')
 	documents, summaries, oracles = load()
-	train_loader, test_loader, valid_loader, available_indices = create_datasets(oracles, sent_type, BATCH_SIZE)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(oracles, sent_type, BATCH_SIZE)
 	train(train_loader, valid_loader)
 	test_scores = test(test_loader).cpu().detach().numpy()
 	
