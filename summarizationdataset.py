@@ -4,9 +4,6 @@ from torch.utils import data
 from torch.utils.data import Dataset, DataLoader, Sampler, SubsetRandomSampler, SequentialSampler
 from sklearn.model_selection import train_test_split
 
-
-data_dir = 'pcr_data/'
-
 def collate_batch(batch):
 	batch_inputs = [item[0] for item in batch]
 	batch_labels = torch.from_numpy(np.array([item[1] for item in batch])).unsqueeze(1).cuda()
@@ -41,18 +38,19 @@ class SubsetSequentialSampler(Sampler):
 
 
 class SummarizationDataset(Dataset):
-	def __init__(self, X_indices, y):
+	def __init__(self, data_dir, X_indices, y):
+		self.data_dir = data_dir
 		self.labels = {X_indices[i] : y[i] for i in range(len(y))}
 
 	def __len__(self):
 		return len(self.labels)
 
 	def __getitem__(self, index):
-		X = np.load(data_dir + 'processed/documents/' + str(index) + '.npy')
+		X = np.load(self.data_dir + '/processed/documents/' + str(index) + '.npy')
 		y = self.labels[index]
 		return X, y
 
-def create_datasets(oracles, sent_type, batch_size):
+def create_datasets(data_dir, oracles, sent_type, batch_size):
 	labels, available_indices = [], []
 	for i, j in enumerate(oracles):
 		try:
@@ -65,9 +63,9 @@ def create_datasets(oracles, sent_type, batch_size):
 	indices_train, indices_val, labels_train, labels_val = train_test_split(indices_train, labels_train, test_size=0.25)
 	
 	# choose the training and test datasets
-	train_data = SummarizationDataset(indices_train, labels_train)
-	valid_data = SummarizationDataset(indices_val, labels_val)
-	test_data = SummarizationDataset(indices_test, labels_test)
+	train_data = SummarizationDataset(data_dir, indices_train, labels_train)
+	valid_data = SummarizationDataset(data_dir, indices_val, labels_val)
+	test_data = SummarizationDataset(data_dir, indices_test, labels_test)
 	
 	# define samplers for obtaining training and validation batches
 	train_sampler = SubsetRandomSampler(indices_train)

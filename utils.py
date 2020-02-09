@@ -16,7 +16,6 @@ from beam import *
 rouge = Rouge()
 rouge_type = 'rouge-1'
 rouge_metric = 'f'
-data_dir = 'pcr_data/'
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 #stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
 #pcr_documents = [' '.join(tokenizer.tokenize(doc)[len(pcr_oracles[i]):]) if re.search('\W\s*¶\s*\d\s*\W', doc) is None else doc for i, doc in enumerate(pcr_documents)]
@@ -137,8 +136,8 @@ def bucketize_sent_lens(number):
 	return out[::-1]
 	'''
 
-def generate_processed_data():
-	documents, summaries, oracles = load()
+def generate_processed_data(data_dir):
+	documents, summaries, oracles = (data_dir)
 	X, sent_pos, sent_len, doc_lens = [], [], [], []
 	doc_lens.append(0)
 	for i in range(len(documents)):
@@ -158,7 +157,7 @@ def generate_processed_data():
 	splits = list(accumulate(doc_lens))
 	X = np.array([np.array(X[splits[i]:splits[i+1]]) for i in range(len(splits) - 1)])
 	for i in range(len(X)):
-		np.save(data_dir + 'processed/documents/' + str(i), X[i])
+		np.save(data_dir + '/processed/documents/' + str(i), X[i])
 	return len(X[0][0])
 
 def clean_document(document):
@@ -192,7 +191,7 @@ def clean_document(document):
 	indices_to_keep = [i for i in range(len(lines)) if len(cleaned[i].split()) > 5 or 'affirm' in cleaned[i]]
 	return ' '.join([lines[i] for i in indices_to_keep])
 
-def load():
+def load(data_dir):
 	with open(data_dir + '/raw/documents.pkl', 'rb') as f:
 		documents = pickle.load(f)
 

@@ -5,14 +5,16 @@ from test import *
 from summarizationdataset import *
 import math
 
+data_dir = 'pcr_data/'
 sent_type = -1
 BATCH_SIZE = 16
+EPOCHS = 100
 
 if __name__ == '__main__':
 	print('Loading data...')
-	documents, summaries, oracles = load()
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(oracles, sent_type, BATCH_SIZE)
-	train(train_loader, valid_loader)
+	documents, summaries, oracles = load(data_dir)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE)
+	train(train_loader, valid_loader, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test_scores = test(test_loader).cpu().detach().numpy()
 	
 	documents = [documents[i] for i in range(len(documents)) if i in available_indices]
