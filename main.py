@@ -6,7 +6,7 @@ from summarizationdataset import *
 import math
 
 data_dir = 'pcr_data/'
-sent_type = 0
+sent_type = -1
 BATCH_SIZE = 16
 EPOCHS = 100
 FEATURES = None
@@ -21,9 +21,9 @@ if __name__ == '__main__':
 	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test_scores = test(test_loader, num_features=FEATURES).cpu().detach().numpy()
 	
-	documents = [documents[i] for i in range(len(documents)) if i in available_indices]
-	summaries = [summaries[i] for i in range(len(summaries)) if i in available_indices]
-	oracles = [oracles[i] for i in range(len(oracles)) if i in available_indices]
+	#documents = [documents[i] for i in range(len(documents)) if i in available_indices]
+	#summaries = [summaries[i] for i in range(len(summaries)) if i in available_indices]
+	#oracles = [oracles[i] for i in range(len(oracles)) if i in available_indices]
 
 	oracle_rouges = []
 	model_rouges = []

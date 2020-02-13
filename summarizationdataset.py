@@ -31,24 +31,24 @@ class SubsetSequentialSampler(Sampler):
         self.indices = indices
 
     def __iter__(self):
-        return (self.indices[i] for i in range(len(self.indices)))
+        return (index for index in self.indices)
 
     def __len__(self):
         return len(self.indices)
 
 
 class SummarizationDataset(Dataset):
-	def __init__(self, data_dir, X_indices, y):
+	def __init__(self, data_dir, indices, labels):
 		self.data_dir = data_dir
-		self.labels = {X_indices[i] : y[i] for i in range(len(y))}
+		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
 
 	def __len__(self):
 		return len(self.labels)
 
 	def __getitem__(self, index):
-		X = np.load(self.data_dir + '/processed/documents/' + str(index) + '.npy')
-		y = self.labels[index]
-		return X, y
+		features = np.load(self.data_dir + '/processed/documents/' + str(index) + '.npy')
+		label = self.labels[index]
+		return features, label
 
 def create_datasets(data_dir, oracles, sent_type, batch_size):
 	labels, available_indices = [], []
