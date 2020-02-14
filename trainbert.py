@@ -19,7 +19,7 @@ torch.cuda.manual_seed_all(seed_val)
 def train(train_loader, valid_loader, n_epochs, batch_size):
 	device = torch.device("cuda")
 
-	criterion = nn.NLLLoss()
+	criterion = nn.CrossEntropyLoss()
 
 	model = BertForSequenceClassification.from_pretrained(
 		"bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
@@ -115,12 +115,8 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 						token_type_ids=None, 
 						attention_mask=b_input_mask)
 			
-			logits = outputs[0].cpu().numpy()
-			per_doc_logits = [logits[splits[i]:splits[i+1]] for i in range(len(splits) - 1)]
-			per_doc_dist = torch.from_numpy(np.array([log_softmax(logit) for logit in per_doc_logits]))
-			preds = torch.argmax(per_doc_dist, dim=1).to(device)
-
-			loss = criterion(per_doc_dist, b_labels)
+			logits = outputs[0]
+			loss = criterion(logits, b_labels)
 
 			# Accumulate the training loss over all of the batches so that we can
 			# calculate the average loss at the end. `loss` is a Tensor containing a
