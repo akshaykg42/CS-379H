@@ -72,8 +72,8 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 		# For each batch of training data...
 		for step, batch in enumerate(train_loader):
 
-			# Progress update every 40 batches.
-			if step % 40 == 0 and not step == 0:
+			# Progress update every 10 batches.
+			if step % 10 == 0 and not step == 0:
 				# Calculate elapsed time in minutes.
 				elapsed = format_time(time.time() - t0)
 				
@@ -91,11 +91,10 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 			#   [2]: labels 
 			b_input_ids = batch[0].to(device)
 			b_input_mask = batch[1].to(device)
-			b_labels = batch[2]
+			b_labels = batch[2].to(device)
 			b_lens = batch[3]
 
-			print(len(b_input_ids))
-			print(len(b_input_ids[0]))
+			print('Number of sentences in this document: {}'.format(b_lens[0]))
 
 			splits = [0]
 			splits.extend(list(accumulate(b_lens)))
@@ -115,7 +114,7 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 						token_type_ids=None, 
 						attention_mask=b_input_mask)
 			
-			logits = outputs[0]
+			logits = outputs[0].unsqueeze(dim=0)
 			loss = criterion(logits, b_labels)
 
 			# Accumulate the training loss over all of the batches so that we can
