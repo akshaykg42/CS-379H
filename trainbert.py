@@ -91,8 +91,11 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 			#   [2]: labels 
 			b_input_ids = batch[0].to(device)
 			b_input_mask = batch[1].to(device)
-			b_labels = batch[2].to(device)
+			b_labels = batch[2]
 			b_lens = batch[3]
+
+			print(len(b_input_ids))
+			print(len(b_input_ids[0]))
 
 			splits = [0]
 			splits.extend(list(accumulate(b_lens)))
@@ -112,12 +115,12 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 						token_type_ids=None, 
 						attention_mask=b_input_mask)
 			
-			logits = outputs[0]
+			logits = outputs[0].cpu().numpy()
 			per_doc_logits = [logits[splits[i]:splits[i+1]] for i in range(len(splits) - 1)]
-			per_doc_dist = [log_softmax(logit) for logit in per_doc_logits]
-			preds = torch.from_numpy(np.argmax(per_doc_dist, axis=1)).to(device)
+			per_doc_dist = torch.from_numpy(np.array([log_softmax(logit) for logit in per_doc_logits]))
+			preds = torch.argmax(per_doc_dist, dim=1).to(device)
 
-			loss = criterion(preds, b_labels)
+			loss = criterion(per_doc_dist, b_labels)
 
 			# Accumulate the training loss over all of the batches so that we can
 			# calculate the average loss at the end. `loss` is a Tensor containing a
