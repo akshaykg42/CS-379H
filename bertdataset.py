@@ -4,21 +4,31 @@ from torch.utils import data
 from torch.utils.data import Dataset, DataLoader, Sampler, SubsetRandomSampler
 from sklearn.model_selection import train_test_split
 
+'''
+WARNING : ONLY WORKS FOR BATCH SIZE OF 1
+'''
 def collate_batch(batch):
 	batch_inputs = [item[0] for item in batch]
-	batch_labels = torch.from_numpy(np.array([item[1] for item in batch])).unsqueeze(1).cuda()
+	batch_labels = [item[1] for item in batch]
 	batch_size = len(batch_inputs)
-	lengths = np.array([len(example) for example in batch_inputs])
-	max_len = max(lengths)
-	num_features = batch_inputs[0].shape[1]
-	padded_inputs = np.zeros((batch_size, max_len, num_features))
+	sent_lens = np.array([np.array([len(sent) for sent in example]) for example in batch_inputs])
+	max_sent_len = max(np.array([max(lens) for lens in sent_lens]))
+	doc_lens = np.array([len(example) for example in batch_inputs])
+	max_doc_len = max(doc_lens)
+	padded_inputs = np.zeros((batch_size, max_doc_len, max_sent_len))
+	mask = np.zeros((batch_size, max_doc_len, max_sent_len))
 	for i, example in enumerate(batch_inputs):
 		for j, sentence in enumerate(example):
-			padded_inputs[i][j] = sentence
-	mask = np.arange(max_len) < lengths[:, None]
+			for k, token in enumerate(sentence):
+				padded_inputs[i][j][k] = token
+				mask[i][j][k] = 1
+	padded_inputs = np.vstack(padded_inputs)
+	mask = np.vstack(mask)
+	batch_labels = torch.from_numpy(np.array(batch_labels)).unsqueeze(1).cuda()
 	padded_inputs = torch.from_numpy(padded_inputs).float().cuda()
-	mask = (~(torch.from_numpy(mask).byte())).to(torch.bool).cuda()
-	return padded_inputs, mask, batch_labels
+	mask = torch.from_numpy(mask).cuda()
+	doc_lens = torch.from_numpy(doc_lens).cuda()
+	return padded_inputs, mask, batch_labels, doc_lens
 
 class SubsetSequentialSampler(Sampler):
     """Samples elements randomly from a given list of indices, without replacement.
@@ -37,7 +47,7 @@ class SubsetSequentialSampler(Sampler):
         return len(self.indices)
 
 
-class SummarizationDataset(Dataset):
+class BertDataset(Dataset):
 	def __init__(self, data_dir, indices, labels):
 		self.data_dir = data_dir
 		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
@@ -46,7 +56,7 @@ class SummarizationDataset(Dataset):
 		return len(self.labels)
 
 	def __getitem__(self, index):
-		features = np.load(self.data_dir + '/processed/documents/' + str(index) + '.npy')
+		features = np.load(self.data_dir + '/bert_processed/documents/' + str(index) + '.npy')
 		label = self.labels[index]
 		return features, label
 
