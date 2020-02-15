@@ -14,4 +14,6 @@ if __name__ == '__main__':
 	documents, summaries, oracles = load(data_dir)
 	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE, mini=True)
 	train(train_loader, valid_loader, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
+	test_scores = test(test_loader)
 
+	print(test_scores)

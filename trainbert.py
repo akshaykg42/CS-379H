@@ -7,8 +7,7 @@ from torch import nn, optim
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 from transformers import get_linear_schedule_with_warmup
 
-dirname = os.path.dirname(os.path.abspath(__file__))
-model_name = 'BERTOracleSelectorModel'
+output_dir = './bert_model_save/'
 seed_val = 42
 
 random.seed(seed_val)
@@ -215,6 +214,10 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 	print("")
 	print("Training complete!")
 
-	# Save the trained model
-	torch.save(model.state_dict(), os.path.join(dirname, model_name + '.th')) # Do NOT modify this line
+	if not os.path.exists(output_dir):
+		os.makedirs(output_dir)
 
+	print("Saving model to %s" % output_dir)
+
+	model.save_pretrained(output_dir)
+	tokenizer.save_pretrained(output_dir)
