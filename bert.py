@@ -5,7 +5,7 @@ import math
 
 data_dir = 'pcr_data/'
 sent_type = 0
-BATCH_SIZE = 1
+BATCH_SIZE = 16
 EPOCHS = 4
 FEATURES = None
 

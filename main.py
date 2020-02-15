@@ -20,10 +20,6 @@ if __name__ == '__main__':
 		break
 	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test_scores = test(test_loader, num_features=FEATURES).cpu().detach().numpy()
-	
-	#documents = [documents[i] for i in range(len(documents)) if i in available_indices]
-	#summaries = [summaries[i] for i in range(len(summaries)) if i in available_indices]
-	#oracles = [oracles[i] for i in range(len(oracles)) if i in available_indices]
 
 	oracle_rouges = []
 	model_rouges = []

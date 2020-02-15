@@ -17,6 +17,7 @@ from rouge import Rouge
 from beam import *
 import time
 import datetime
+import random
 rouge = Rouge()
 rouge_type = 'rouge-1'
 rouge_metric = 'f'
@@ -90,6 +91,23 @@ def get_beam_oracles(documents, summaries):
 		oracles.append(indices)
 		rouge_scores.append(score)
 	return oracles
+
+def get_oracle_and_random_indices(documents, oracles, num_indices, sent_type):
+	out = []
+	available_indices = []
+	for i, (document, oracle) in enumerate(list(zip(documents, oracles))):
+		indices = []
+		try:
+			indices.append(oracle[sent_type])
+			available_indices.append(i)
+		except:
+			continue
+		options = list(range(len(tokenizer.tokenize(document))))
+		options.pop(indices[0])
+		random.shuffle(options)
+		indices.extend(options[:num_indices-1])
+		out.append(indices)
+	return out, available_indices
 
 def get_rouge(hypothesis, reference, rougetype, scoretype):
 	rougetype = 'rouge-' + rougetype
