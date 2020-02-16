@@ -160,12 +160,8 @@ def bucketize_sent_lens(number):
 	'''
 
 def flat_accuracy(preds, labels):
-	print(preds)
-	print(labels)
-	pred_flat = np.argmax(preds, axis=1).flatten()
-	print(pred_flat)
+	pred_flat = np.argmax(preds, axis=0).flatten()
 	labels_flat = labels.flatten()
-	print(labels_flat)
 	return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 def format_time(elapsed):

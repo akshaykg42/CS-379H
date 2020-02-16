@@ -5,7 +5,7 @@ from bertdataset import *
 import math
 
 data_dir = 'pcr_data/'
-sent_type = 0
+sent_type = -1
 BATCH_SIZE = 1
 EPOCHS = 4
 FEATURES = None
@@ -17,5 +17,3 @@ if __name__ == '__main__':
 	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE, mini=MINI)
 	train(train_loader, valid_loader, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test_scores = test(test_loader)
-
-	print(test_scores)

@@ -8,12 +8,6 @@ from transformers import BertForSequenceClassification, AdamW, BertConfig
 from transformers import get_linear_schedule_with_warmup
 
 output_dir = './bert_model_save/'
-seed_val = 42
-
-random.seed(seed_val)
-np.random.seed(seed_val)
-torch.manual_seed(seed_val)
-torch.cuda.manual_seed_all(seed_val)
 
 def train(train_loader, valid_loader, n_epochs, batch_size):
 	device = torch.device("cuda")
@@ -92,8 +86,6 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 			b_input_mask = batch[1].to(device)
 			b_labels = batch[2].to(device)
 			b_lens = batch[3]
-
-			print('Number of sentences in this document: {}'.format(b_lens[0]))
 
 			splits = [0]
 			splits.extend(list(accumulate(b_lens)))

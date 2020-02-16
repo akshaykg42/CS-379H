@@ -4,13 +4,6 @@ from transformers import BertForSequenceClassification
 import os
 
 output_dir = './bert_model_save/'
-seed_val = 42
-
-random.seed(seed_val)
-np.random.seed(seed_val)
-torch.manual_seed(seed_val)
-torch.cuda.manual_seed_all(seed_val)
-
 
 def test(test_loader):
 	device = torch.device("cuda")
@@ -22,6 +15,7 @@ def test(test_loader):
 
 	# Tracking variables 
 	nb_steps, accuracy = 0, 0
+	all_logits = []
 
 	# Predict 
 	for batch in test_loader:
@@ -37,9 +31,9 @@ def test(test_loader):
 			# Forward pass, calculate logit predictions
 			outputs = model(b_input_ids, token_type_ids=None, 
 							attention_mask=b_input_mask)
-
+		
 		logits = outputs[0]
-
+		
 		# Move logits and labels to CPU
 		logits = logits.detach().cpu().numpy()
 		label_ids = b_labels.to('cpu').numpy()
@@ -52,6 +46,8 @@ def test(test_loader):
 
 		# Track the number of batches
 		nb_steps += 1
+
+		all_logits.append(logits)
 	
 	print('[II]  Accuracy: {0:.2f}'.format(accuracy/nb_steps))
-	return logits
+	return all_logits

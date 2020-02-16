@@ -30,6 +30,12 @@ def collate_batch(batch):
 	return padded_inputs, mask, batch_labels, doc_lens
 
 def get_mini_indices(old_len, new_len, label):
+	if(new_len >= old_len):
+		options = list(range(old_len))
+		random.shuffle(options)
+		new_label = options.index(label)
+		return options, new_label
+	else:
 		options = list(range(old_len))
 		options.pop(label)
 		random.shuffle(options)
@@ -115,13 +121,13 @@ def create_datasets(data_dir, oracles, sent_type, batch_size, mini=False):
 	
 	# load validation data in batches
 	valid_loader = torch.utils.data.DataLoader(valid_data,
-												batch_size=len(indices_val),
+												batch_size=batch_size,
 												sampler=valid_sampler,
 												collate_fn=collate_batch)
 	
 	# load test data in batches
 	test_loader = torch.utils.data.DataLoader(test_data,
-												batch_size=len(indices_test),
+												batch_size=batch_size,
 												sampler=test_sampler,
 												collate_fn=collate_batch)
 	
