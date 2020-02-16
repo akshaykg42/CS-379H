@@ -21,8 +21,8 @@ if __name__ == '__main__':
 		args.datadir, args.type, args.batchsize, args.epochs, args.features, args.mini
 
 	print('Loading data...')
-	documents, summaries, oracles = load(data_dir)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE, MINI)
+	documents, summaries, oracles = load(DATA_DIR)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, sent_type, BATCH_SIZE, MINI)
 	for inputs, mask, targets in train_loader:
 		FEATURES = inputs[0].shape[1]
 		break
