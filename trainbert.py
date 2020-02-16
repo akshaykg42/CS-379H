@@ -220,4 +220,3 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 	print("Saving model to %s" % output_dir)
 
 	model.save_pretrained(output_dir)
-	tokenizer.save_pretrained(output_dir)

@@ -1,14 +1,23 @@
 from model import *
 from utils import *
+from transformers import BertForSequenceClassification
 import os
 
 output_dir = './bert_model_save/'
+seed_val = 42
+
+random.seed(seed_val)
+np.random.seed(seed_val)
+torch.manual_seed(seed_val)
+torch.cuda.manual_seed_all(seed_val)
+
 
 def test(test_loader):
+	device = torch.device("cuda")
+
 	print('[II] Start testing')
 	
-	model = BertForSequenceClassification.from_pretrained(output_dir)
-	tokenizer = tokenizer_class.from_pretrained(output_dir)
+	model = BertForSequenceClassification.from_pretrained(output_dir).cuda()
 	model.eval()
 
 	# Tracking variables 
