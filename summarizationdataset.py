@@ -20,6 +20,21 @@ def collate_batch(batch):
 	mask = (~(torch.from_numpy(mask).byte())).to(torch.bool).cuda()
 	return padded_inputs, mask, batch_labels
 
+def get_mini_indices(old_len, new_len, label):
+	if(new_len >= old_len):
+		options = list(range(old_len))
+		random.shuffle(options)
+		new_label = options.index(label)
+		return options, new_label
+	else:
+		options = list(range(old_len))
+		options.pop(label)
+		random.shuffle(options)
+		indices = options[:new_len]
+		new_label = random.randint(0, new_len - 1)
+		indices[new_label] = label
+		return indices, new_label
+
 class SubsetSequentialSampler(Sampler):
     """Samples elements randomly from a given list of indices, without replacement.
 
@@ -50,7 +65,23 @@ class SummarizationDataset(Dataset):
 		label = self.labels[index]
 		return features, label
 
-def create_datasets(data_dir, oracles, sent_type, batch_size):
+class MiniSummarizationDataset(Dataset):
+	def __init__(self, data_dir, indices, labels, minidoc_size=10):
+		self.data_dir = data_dir
+		self.minidoc_size = minidoc_size
+		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
+
+	def __len__(self):
+		return len(self.labels)
+
+	def __getitem__(self, index):
+		features = np.load(self.data_dir + '/processed/documents/' + str(index) + '.npy', allow_pickle=True)
+		label = self.labels[index]
+		indices, label = get_mini_indices(len(features), self.minidoc_size, label)
+		features = [features[i] for i in indices]
+		return features, label
+
+def create_datasets(data_dir, oracles, sent_type, batch_size, mini=False):
 	labels, available_indices = [], []
 	for i, j in enumerate(oracles):
 		try:
@@ -62,10 +93,12 @@ def create_datasets(data_dir, oracles, sent_type, batch_size):
 	indices_train, indices_test, labels_train, labels_test = train_test_split(available_indices, labels, test_size=0.2)
 	indices_train, indices_val, labels_train, labels_val = train_test_split(indices_train, labels_train, test_size=0.25)
 	
+	DatasetType = MiniSummarizationDataset if mini else SummarizationDataset
+
 	# choose the training and test datasets
-	train_data = SummarizationDataset(data_dir, indices_train, labels_train)
-	valid_data = SummarizationDataset(data_dir, indices_val, labels_val)
-	test_data = SummarizationDataset(data_dir, indices_test, labels_test)
+	train_data = DatasetType(data_dir, indices_train, labels_train)
+	valid_data = DatasetType(data_dir, indices_val, labels_val)
+	test_data = DatasetType(data_dir, indices_test, labels_test)
 	
 	# define samplers for obtaining training and validation batches
 	train_sampler = SubsetRandomSampler(indices_train)

@@ -10,11 +10,12 @@ sent_type = -1
 BATCH_SIZE = 16
 EPOCHS = 100
 FEATURES = None
+MINI = False
 
 if __name__ == '__main__':
 	print('Loading data...')
 	documents, summaries, oracles = load(data_dir)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE, MINI)
 	for inputs, mask, targets in train_loader:
 		FEATURES = inputs[0].shape[1]
 		break

@@ -8,7 +8,6 @@ data_dir = 'pcr_data/'
 sent_type = -1
 BATCH_SIZE = 1
 EPOCHS = 4
-FEATURES = None
 MINI = True
 
 if __name__ == '__main__':
