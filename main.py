@@ -17,12 +17,12 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	DATA_DIR, SENT_TYPE, BATCH_SIZE, EPOCHS, FEATURES, MINI = \
+	DATA_DIR, TYPE, BATCH_SIZE, EPOCHS, FEATURES, MINI = \
 		args.datadir, args.type, args.batchsize, args.epochs, args.features, args.mini
 
 	print('Loading data...')
 	documents, summaries, oracles = load(DATA_DIR)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, sent_type, BATCH_SIZE, MINI)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, TYPE, BATCH_SIZE, MINI)
 	for inputs, mask, targets in train_loader:
 		FEATURES = inputs[0].shape[1]
 		break
@@ -35,11 +35,11 @@ if __name__ == '__main__':
 	for i, index in enumerate(indices_test):
 		document = documents[index]
 		summary = summaries[index]
-		oracle_index = oracles[index][sent_type]
+		oracle_index = oracles[index][TYPE]
 		model_scores = test_scores[i]
 		document_sentences = tokenizer.tokenize(document)
 		summary_sentences = tokenizer.tokenize(summary)
-		ground_truth_sentence = summary_sentences[sent_type]
+		ground_truth_sentence = summary_sentences[TYPE]
 		print('Ground Truth Sentence: {}\n'.format(ground_truth_sentence))
 		oracle_sentence = document_sentences[oracle_index]
 		model_best_sentence_indices = model_scores.flatten().argsort()[-5:][::-1]
