@@ -3,16 +3,23 @@ from trainbert import *
 from testbert import *
 from bertdataset import *
 import math
-
-data_dir = 'pcr_data/'
-sent_type = -1
-BATCH_SIZE = 1
-EPOCHS = 4
-MINI = True
+import argparse
 
 if __name__ == '__main__':
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-t', '--type', type=int, default=0)
+	parser.add_argument('-b', '--batchsize', type=int, default=1)
+	parser.add_argument('-e', '--epochs', type=int, default=4)
+	parser.add_argument('-d', '--datadir', default='pcr_data')
+	parser.add_argument('-m', '--mini', action='store_true', default=False)
+
+	args = parser.parse_args()
+
+	DATA_DIR, TYPE, BATCH_SIZE, EPOCHS, MINI = \
+		args.datadir, args.type, args.batchsize, args.epochs, args.mini
+
 	print('Loading data...')
-	documents, summaries, oracles = load(data_dir)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE, mini=MINI)
+	documents, summaries, oracles = load(DATA_DIR)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, TYPE, BATCH_SIZE, mini=MINI)
 	train(train_loader, valid_loader, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test_scores = test(test_loader)
