@@ -86,7 +86,7 @@ class BertMiniDataset(Dataset):
 		features = np.load(self.data_dir + '/bert_processed/documents/' + str(index) + '.npy', allow_pickle=True)
 		label = self.labels[index]
 		indices, label = get_mini_indices(len(features), self.minidoc_size, label)
-		features = [features[i] for i in indices]
+		features = np.array([features[i] for i in indices])
 		return features, label
 
 def create_datasets(data_dir, oracles, sent_type, batch_size, mini=False):

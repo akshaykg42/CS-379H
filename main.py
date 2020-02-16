@@ -10,7 +10,7 @@ sent_type = -1
 BATCH_SIZE = 16
 EPOCHS = 100
 FEATURES = None
-MINI = False
+MINI = True
 
 if __name__ == '__main__':
 	print('Loading data...')
@@ -24,6 +24,7 @@ if __name__ == '__main__':
 
 	oracle_rouges = []
 	model_rouges = []
+	'''
 	for i, index in enumerate(indices_test):
 		document = documents[index]
 		summary = summaries[index]
@@ -61,4 +62,5 @@ if __name__ == '__main__':
 	print(avg_model_rouges)
 	print(min_model_rouges)
 	print(max_model_rouges)
+	'''
 

@@ -39,8 +39,6 @@ def train(train_loader, valid_loader, num_features, n_epochs, batch_size, patien
 		for batch, (inputs, mask, targets) in enumerate(train_loader):
 			optimizer.zero_grad()
 			scores, preds = model(inputs, mask)
-			print(scores.shape)
-			print(targets.shape)
 			train_loss = loss(scores, targets)
 			train_loss.backward()
 			optimizer.step()
