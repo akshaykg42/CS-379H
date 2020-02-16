@@ -4,15 +4,22 @@ from train import *
 from test import *
 from summarizationdataset import *
 import math
-
-data_dir = 'pcr_data/'
-sent_type = -1
-BATCH_SIZE = 16
-EPOCHS = 100
-FEATURES = None
-MINI = True
+import argparse
 
 if __name__ == '__main__':
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-t', '--type', type=int, default=0)
+	parser.add_argument('-b', '--batchsize', type=int, default=16)
+	parser.add_argument('-e', '--epochs', type=int, default=100)
+	parser.add_argument('-f', '--features', type=int, default=None)
+	parser.add_argument('-d', '--datadir', default='pcr_data')
+	parser.add_argument('-m', '--mini', action='store_true', default=False)
+
+	args = parser.parse_args()
+
+	DATA_DIR, SENT_TYPE, BATCH_SIZE, EPOCHS, FEATURES, MINI = \
+		args.datadir, args.type, args.batchsize, args.epochs, args.features, args.mini
+
 	print('Loading data...')
 	documents, summaries, oracles = load(data_dir)
 	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(data_dir, oracles, sent_type, BATCH_SIZE, MINI)
