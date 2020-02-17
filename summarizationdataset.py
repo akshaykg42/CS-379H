@@ -124,4 +124,4 @@ def create_datasets(data_dir, oracles, sent_type, batch_size, mini=False):
 												sampler=test_sampler,
 												collate_fn=collate_batch)
 	
-	return train_loader, test_loader, valid_loader, set(available_indices), indices_test
+	return train_loader, test_loader, valid_loader, available_indices, indices_test

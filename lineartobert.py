@@ -31,15 +31,13 @@ if __name__ == '__main__':
 	labels = [oracles[i][TYPE] for i in available_indices]
 	dataset = SummarizationDataset(DATA_DIR, available_indices, labels)
 	sampler = SubsetSequentialSampler(available_indices)
+
 	dataloader = torch.utils.data.DataLoader(dataset,
-												batch_size=len(available_indices),
+												batch_size=1,
 												sampler=sampler,
 												collate_fn=collate_batch)
 
-	test_scores = test(dataloader, num_features=FEATURES).cpu().detach().numpy()
-
-	print(test_scores.shape)
-	print(test_scores)
+	test_scores = [logits.cpu().detach().numpy() for logits in test(dataloader, num_features=FEATURES)]
 
 	oracle_rouges = []
 	model_rouges = []
