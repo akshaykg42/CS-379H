@@ -6,14 +6,16 @@ from trainbert import train as trainbert
 from testbert import *
 from test import *
 from testbert import test as testbert
+from bertdataset import *
 from summarizationdataset import *
+from bertdataset import collate_batch as bert_collate_batch
 import math
 import argparse
 
 class LinearToBERTDataset(Dataset):
 	def __init__(self, data_dir, indices, labels, top_k):
 		self.data_dir = data_dir
-		self.top_k = top_k
+		self.top_k = {indices[i] : top_k[i] for i in range(len(top_k))}
 		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
 
 	def __len__(self):
@@ -22,8 +24,8 @@ class LinearToBERTDataset(Dataset):
 	def __getitem__(self, index):
 		features = np.load(self.data_dir + '/bert_processed/documents/' + str(index) + '.npy', allow_pickle=True)
 		label = self.labels[index]
-		label = self.top_k.index(label)
-		features = np.array([features[i] for i in self.top_k])
+		label = np.where(self.top_k[index] == label)[0][0]
+		features = np.array([features[i] for i in self.top_k[index]])
 		return features, label
 
 def create_lineartobert_datasets(data_dir, available_indices, labels, top_k, batch_size):
@@ -34,7 +36,7 @@ def create_lineartobert_datasets(data_dir, available_indices, labels, top_k, bat
 	top_k = [top_k[i] for i in updated_available_indices]
 
 	indices_train, indices_test, labels_train, labels_test, top_k_train, top_k_test = train_test_split(available_indices, labels, top_k, test_size=0.2)
-	indices_train, indices_val, labels_train, labels_val, top_k_train, top_k_val = train_test_split(indices_train, labels_train, top_k test_size=0.25)
+	indices_train, indices_val, labels_train, labels_val, top_k_train, top_k_val = train_test_split(indices_train, labels_train, top_k_train, test_size=0.25)
 	
 	# choose the training and test datasets
 	train_data = LinearToBERTDataset(data_dir, indices_train, labels_train, top_k_train)
@@ -50,25 +52,25 @@ def create_lineartobert_datasets(data_dir, available_indices, labels, top_k, bat
 	train_loader = torch.utils.data.DataLoader(train_data,
 												batch_size=batch_size,
 												sampler=train_sampler,
-												collate_fn=collate_batch)
+												collate_fn=bert_collate_batch)
 	
 	# load validation data in batches
 	valid_loader = torch.utils.data.DataLoader(valid_data,
 												batch_size=batch_size,
 												sampler=valid_sampler,
-												collate_fn=collate_batch)
+												collate_fn=bert_collate_batch)
 	
 	# load test data in batches
 	test_loader = torch.utils.data.DataLoader(test_data,
 												batch_size=batch_size,
 												sampler=test_sampler,
-												collate_fn=collate_batch)
+												collate_fn=bert_collate_batch)
 	
 	return train_loader, test_loader, valid_loader, indices_test
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-t', '--type', type=int, default=0)
+	parser.add_argument('-t', '--type', type=int, default=-1)
 	parser.add_argument('-b', '--batchsize', type=int, default=16)
 	parser.add_argument('-e', '--epochs', type=int, default=100)
 	parser.add_argument('-f', '--features', type=int, default=None)
