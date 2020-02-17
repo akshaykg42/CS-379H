@@ -137,7 +137,7 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 
 		print("")
 		print("  Average training loss: {0:.2f}".format(avg_train_loss))
-		print("  Training epcoh took: {:}".format(format_time(time.time() - t0)))
+		print("  Training epoch took: {:}".format(format_time(time.time() - t0)))
 			
 		# ========================================
 		#			   Validation
