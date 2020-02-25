@@ -89,15 +89,13 @@ class BertMiniDataset(Dataset):
 		features = np.array([features[i] for i in indices])
 		return features, label
 
-# TODO : Incorporate types
 def create_datasets(data_dir, oracles, types, sent_type, batch_size, mini=False):
 	labels, available_indices = [], []
-	for i, j in enumerate(oracles):
-		try:
-			labels.append(j[sent_type])
-			available_indices.append(i)
-		except:
-			pass
+	for i, (t, o) in enumerate(list(zip(types, oracles))):
+		for j, t_ in enumerate(t):
+			if(sent_type in t_):
+				labels.append(o[j])
+				available_indices.append(i)
 
 	indices_train, indices_test, labels_train, labels_test = train_test_split(available_indices, labels, test_size=0.2)
 	indices_train, indices_val, labels_train, labels_val = train_test_split(indices_train, labels_train, test_size=0.25)
