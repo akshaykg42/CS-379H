@@ -19,7 +19,7 @@ if __name__ == '__main__':
 		args.datadir, args.type, args.batchsize, args.epochs, args.mini
 
 	print('Loading data...')
-	documents, summaries, oracles = load(DATA_DIR)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, TYPE, BATCH_SIZE, mini=MINI)
+	documents, summaries, oracles, types = load(DATA_DIR)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, types, TYPE, BATCH_SIZE, mini=MINI)
 	train(train_loader, valid_loader, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test_scores = test(test_loader)

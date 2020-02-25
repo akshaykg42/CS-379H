@@ -10,7 +10,7 @@ def collate_batch(batch):
 	batch_labels = [item[1] for item in batch]
 	batch_size = len(batch_inputs)
 	sent_lens = np.array([np.array([len(sent) for sent in example]) for example in batch_inputs])
-	max_sent_len = max(np.array([max(lens) for lens in sent_lens]))
+	max_sent_len = min(512, max(np.array([max(lens) for lens in sent_lens])))
 	doc_lens = np.array([len(example) for example in batch_inputs])
 	max_doc_len = max(doc_lens)
 	padded_inputs = np.zeros((batch_size, max_doc_len, max_sent_len))
@@ -74,7 +74,7 @@ class BertDataset(Dataset):
 		return features, label
 
 class BertMiniDataset(Dataset):
-	def __init__(self, data_dir, indices, labels, minidoc_size=10):
+	def __init__(self, data_dir, indices, labels, minidoc_size=5):
 		self.data_dir = data_dir
 		self.minidoc_size = minidoc_size
 		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
@@ -89,7 +89,8 @@ class BertMiniDataset(Dataset):
 		features = np.array([features[i] for i in indices])
 		return features, label
 
-def create_datasets(data_dir, oracles, sent_type, batch_size, mini=False):
+# TODO : Incorporate types
+def create_datasets(data_dir, oracles, types, sent_type, batch_size, mini=False):
 	labels, available_indices = [], []
 	for i, j in enumerate(oracles):
 		try:

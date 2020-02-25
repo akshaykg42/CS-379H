@@ -1,4 +1,4 @@
-from utils import *
+2	qfrom utils import *
 from model import *
 from train import *
 from test import *
@@ -21,13 +21,13 @@ if __name__ == '__main__':
 		args.datadir, args.type, args.batchsize, args.epochs, args.features, args.mini
 
 	print('Loading data...')
-	documents, summaries, oracles = load(DATA_DIR)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, TYPE, BATCH_SIZE, MINI)
+	documents, summaries, oracles, types = load(DATA_DIR)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, types, TYPE, BATCH_SIZE, MINI)
 	for inputs, mask, targets in train_loader:
 		FEATURES = inputs[0].shape[1]
 		break
 	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
-	test_scores = test(test_loader, num_features=FEATURES).cpu().detach().numpy()
+	test_scores = [logits.cpu().detach().numpy() for logits in test(test_loader, num_features=FEATURES)]
 
 	oracle_rouges = []
 	model_rouges = []

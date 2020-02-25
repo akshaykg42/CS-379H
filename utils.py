@@ -18,9 +18,11 @@ from beam import *
 import time
 import datetime
 import random
+from allennlp.predictors.predictor import Predictor
 rouge = Rouge()
 rouge_type = 'rouge-1'
 rouge_metric = 'f'
+predictor = Predictor.from_path("../ner-model-2018.12.18.tar.gz")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
 sp = spacy.load('en')
@@ -30,8 +32,8 @@ sp = spacy.load('en')
 def get_vanilla_oracles(documents, summaries):
 	oracles = []
 	for document, summary in list(zip(documents, summaries)):
-		document_sentences = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in tokenizer.tokenize(document)]
-		summary_sentences = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in tokenizer.tokenize(summary)]
+		document_sentences = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in document]
+		summary_sentences = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in summary]
 		oracle = []
 		for summary_sentence in summary_sentences:
 			best_score = -1.0
@@ -47,15 +49,13 @@ def get_vanilla_oracles(documents, summaries):
 
 def optimize_beam_oracles(documents, summaries, oracles):
 	for document, summary, oracle_indices in list(zip(documents, summaries, oracles)):
-		summary_sentences = tokenizer.tokenize(summary)
-		document_sentences = tokenizer.tokenize(document)
 		try:
 			if(len(oracle_indices) <= 9):
 				options = list(permutations(oracle_indices))
 				best_option = options[0]
-				best_score = sum([rouge.get_scores(summary_sentences[j], document_sentences[options[0][j]])[0][rouge_type][rouge_metric] for j in range(len(summary_sentences))])
+				best_score = sum([rouge.get_scores(summary[j], document[options[0][j]])[0][rouge_type][rouge_metric] for j in range(len(summary))])
 				for option in options:
-					score = sum([rouge.get_scores(summary_sentences[j], document_sentences[option[j]])[0][rouge_type][rouge_metric] for j in range(len(summary_sentences))])
+					score = sum([rouge.get_scores(summary[j], document[option[j]])[0][rouge_type][rouge_metric] for j in range(len(summary))])
 					if(score > best_score):
 						best_score = score
 						best_option = option
@@ -68,19 +68,17 @@ def get_beam_oracles(documents, summaries):
 	oracles = []
 	rouge_scores = []
 	for document, summary in list(zip(documents, summaries)):
-		document_sentences = tokenizer.tokenize(document)
-		summary_sentences = tokenizer.tokenize(summary)
 		beam = Beam(15)
 		beam.add(('', []), 0)
-		for i in range(len(summary_sentences)):
+		for i in range(len(summary)):
 			new_beam = Beam(15)
 			for curr in list(beam.get_elts_and_scores()):
 				option, score = curr
 				fragment, indices = option
-				for j in range(len(summary_sentences), len(document_sentences)):
+				for j in range(len(summary), len(document)):
 					if(j not in indices):
-						new_fragment = fragment + ' ' + document_sentences[j]
-						new_score = rouge.get_scores(new_fragment, ' '.join(summary_sentences[:i+1]))[0][rouge_type][rouge_metric]
+						new_fragment = fragment + ' ' + document[j]
+						new_score = rouge.get_scores(new_fragment, ' '.join(summary[:i+1]))[0][rouge_type][rouge_metric]
 						new_indices = [x for x in indices]
 						new_indices.append(j)
 						new_beam.add((new_fragment, new_indices), new_score)
@@ -92,21 +90,21 @@ def get_beam_oracles(documents, summaries):
 		rouge_scores.append(score)
 	return oracles
 
-def get_oracle_and_random_indices(documents, oracles, num_indices, sent_type):
+def get_oracle_and_random_indices(documents, oracles, types, num_indices, sent_type):
 	out = []
 	available_indices = []
-	for i, (document, oracle) in enumerate(list(zip(documents, oracles))):
-		indices = []
-		try:
-			indices.append(oracle[sent_type])
-			available_indices.append(i)
-		except:
+	for i, (document, oracle, type_) in enumerate(list(zip(documents, oracles, types))):
+		doc_len = len(document)
+		indices = [oracle[j] for j, t in enumerate(type_) if t == sent_type]
+		if(indices):
+			available_indices.extend([i] * len(indices))
+		else:
 			continue
-		options = list(range(len(tokenizer.tokenize(document))))
-		options.pop(indices[0])
-		random.shuffle(options)
-		indices.extend(options[:num_indices-1])
-		out.append(indices)
+		for j in indices:
+			options = list(range(doc_len))
+			options.pop(j)
+			random.shuffle(options)
+			out.append([j] + options[:num_indices-1])
 	return out, available_indices
 
 def get_rouge(hypothesis, reference, rougetype, scoretype):
@@ -178,11 +176,10 @@ def log_softmax(x):
 	return np.log(e_x / e_x.sum())
 
 def generate_bert_encoded_data(data_dir):
-	documents, summaries, oracles = load(data_dir)
+	documents, summaries, oracles, types = load(data_dir)
 	for i, document in enumerate(documents):
 		doc_features = []
-		sents = tokenizer.tokenize(document)
-		for sent in sents:
+		for sent in document:
 			encoded_sent = np.array(bert_tokenizer.encode(
 				sent,
 				add_special_tokens = True,
@@ -193,11 +190,11 @@ def generate_bert_encoded_data(data_dir):
 		np.save(data_dir + '/bert_processed/documents/' + str(i), doc_features)
 
 def generate_processed_data(data_dir):
-	documents, summaries, oracles = load(data_dir)
+	documents, summaries, oracles, types = load(data_dir)
 	X, sent_pos, sent_len, doc_lens = [], [], [], []
 	doc_lens.append(0)
 	for i in range(len(documents)):
-		doc_sents = tokenizer.tokenize(documents[i])
+		doc_sents = documents[i]
 		X_i = [preprocess_sentence(sent) for sent in doc_sents]
 		X.extend(X_i)
 		sent_len.extend([bucketize_sent_lens(len(nltk.word_tokenize(sent))) for sent in doc_sents])
@@ -247,6 +244,30 @@ def clean_document(document):
 	indices_to_keep = [i for i in range(len(lines)) if len(cleaned[i].split()) > 5 or 'affirm' in cleaned[i]]
 	return ' '.join([lines[i] for i in indices_to_keep])
 
+def remove_named_entities(documents):
+	out = []
+	for document in tqdm(documents):
+		new_doc = []
+		for sentence in document:
+			prediction = predictor.predict(sentence)
+			replaced = [tag if tag != 'O' else word for i, (tag, word) in enumerate(list(zip(prediction["tags"], prediction["words"])))]
+			i = 0
+			reduced = []
+			while(i < len(replaced)):
+				word = replaced[i]
+				if(word in tags['ALL']):
+					tagtype = word[2:]
+					while(i < len(replaced) and replaced[i] in tags[tagtype]):
+						i += 1
+					reduced.append(tagtype)
+				else:
+					reduced.append(word)
+					i += 1
+			new_doc.append(' '.join(reduced))
+		out.append(new_doc)
+	return out
+
+
 def load(data_dir):
 	with open(data_dir + '/raw/documents.pkl', 'rb') as f:
 		documents = pickle.load(f)
@@ -257,4 +278,7 @@ def load(data_dir):
 	with open(data_dir + '/raw/oracles.pkl', 'rb') as f:
 		oracles = pickle.load(f)
 
-	return documents, summaries, oracles
+	with open(data_dir + '/raw/types.pkl', 'rb') as f:
+		types = pickle.load(f)
+
+	return documents, summaries, oracles, types

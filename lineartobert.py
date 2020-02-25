@@ -29,8 +29,8 @@ if __name__ == '__main__':
 
 	print('Loading data...')
 
-	documents, summaries, oracles = load(DATA_DIR)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, TYPE, BATCH_SIZE)
+	documents, summaries, oracles, types = load(DATA_DIR)
+	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, types, TYPE, BATCH_SIZE)
 	
 	for inputs, mask, targets in train_loader:
 		FEATURES = inputs[0].shape[1]

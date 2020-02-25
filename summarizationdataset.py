@@ -67,7 +67,7 @@ class SummarizationDataset(Dataset):
 		return features, label
 
 class MiniSummarizationDataset(Dataset):
-	def __init__(self, data_dir, indices, labels, minidoc_size=10):
+	def __init__(self, data_dir, indices, labels, minidoc_size=5):
 		self.data_dir = data_dir
 		self.minidoc_size = minidoc_size
 		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
@@ -82,7 +82,8 @@ class MiniSummarizationDataset(Dataset):
 		features = np.array([features[i] for i in indices])
 		return features, label
 
-def create_datasets(data_dir, oracles, sent_type, batch_size, mini=False):
+# TODO : Incorporate types
+def create_datasets(data_dir, oracles, types, sent_type, batch_size, mini=False):
 	labels, available_indices = [], []
 	for i, j in enumerate(oracles):
 		try:
