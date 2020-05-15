@@ -7,3 +7,8 @@
 *.json
 *.bin
 *.xml
+*.txt
+*.csv
+*.pkl
+*.story
+*.props
