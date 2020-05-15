@@ -3,14 +3,14 @@ from utils import *
 from transformers import BertForSequenceClassification
 import os
 
-output_dir = './bert_model_save/'
+output_dir = './bert_model_quakes'
 
-def test(test_loader):
+def test(test_loader, typ):
 	device = torch.device("cuda")
 
 	print('[II] Start testing')
 	
-	model = BertForSequenceClassification.from_pretrained(output_dir).cuda()
+	model = BertForSequenceClassification.from_pretrained(output_dir + str(typ) + '/').cuda()
 	model.eval()
 
 	# Tracking variables 

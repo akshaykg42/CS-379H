@@ -7,9 +7,9 @@ from torch import nn, optim
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 from transformers import get_linear_schedule_with_warmup
 
-output_dir = './bert_model_save/'
+output_dir = './bert_model_quakes'
 
-def train(train_loader, valid_loader, n_epochs, batch_size):
+def train(train_loader, valid_loader, n_epochs, batch_size, typ):
 	device = torch.device("cuda")
 
 	criterion = nn.CrossEntropyLoss()
@@ -206,9 +206,9 @@ def train(train_loader, valid_loader, n_epochs, batch_size):
 	print("")
 	print("Training complete!")
 
-	if not os.path.exists(output_dir):
-		os.makedirs(output_dir)
+	if not os.path.exists(output_dir + str(typ) + '/'):
+		os.makedirs(output_dir + str(typ) + '/')
 
-	print("Saving model to %s" % output_dir)
+	print("Saving model to %s" % output_dir + str(typ) + '/')
 
-	model.save_pretrained(output_dir)
+	model.save_pretrained(output_dir + str(typ) + '/')

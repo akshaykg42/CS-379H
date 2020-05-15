@@ -3,13 +3,13 @@ from utils import *
 import os
 
 dirname = os.path.dirname(os.path.abspath(__file__))
-model_name = 'OracleSelectorModel'
+model_name = 'linear_model_pcr'
 
-def test(test_loader, num_features):
+def test(test_loader, num_features, typ):
 	print('[II] Start testing')
 	
 	model = OracleSelectorModel(num_features).cuda()
-	model.load_state_dict(torch.load(os.path.join(dirname, model_name + '.th')))
+	model.load_state_dict(torch.load(os.path.join(dirname, model_name + str(typ) + '.th')))
 	model.eval()
 
 	all_scores = []
@@ -25,3 +25,4 @@ def test(test_loader, num_features):
 	accuracy = sum(accuracy)/len(accuracy)
 	print('[II] Accuracy: {}'.format(accuracy))
 	return all_scores
+

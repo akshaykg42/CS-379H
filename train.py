@@ -6,9 +6,9 @@ import argparse, pickle
 from torch import nn, optim
 
 dirname = os.path.dirname(os.path.abspath(__file__))
-model_name = 'OracleSelectorModel'
+model_name = 'linear_model_pcr'
 
-def train(train_loader, valid_loader, num_features, n_epochs, batch_size, patience=7):
+def train(train_loader, valid_loader, num_features, n_epochs, batch_size, typ, patience=7):
 	'''
 	This is the main training function.
 	'''
@@ -80,5 +80,5 @@ def train(train_loader, valid_loader, num_features, n_epochs, batch_size, patien
 
 	model.load_state_dict(torch.load('checkpoint.pt'))
 	# Save the trained model
-	torch.save(model.state_dict(), os.path.join(dirname, model_name + '.th')) # Do NOT modify this line
+	torch.save(model.state_dict(), os.path.join(dirname, model_name + str(typ) + '.th')) # Do NOT modify this line
 

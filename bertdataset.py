@@ -1,3 +1,4 @@
+import os
 import torch
 import random
 import numpy as np
@@ -61,51 +62,81 @@ class SubsetSequentialSampler(Sampler):
         return len(self.indices)
 
 class BertDataset(Dataset):
-	def __init__(self, data_dir, indices, labels):
+	def __init__(self, data_dir, indices, labels, typ):
 		self.data_dir = data_dir
 		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
+		self.typ = typ
 
 	def __len__(self):
 		return len(self.labels)
 
 	def __getitem__(self, index):
-		features = np.load(self.data_dir + '/bert_processed/documents/' + str(index) + '.npy', allow_pickle=True)
+		features = np.load(self.data_dir + '/bert_processed/{}/'.format(self.typ) + str(index) + '.npy', allow_pickle=True)
 		label = self.labels[index]
 		return features, label
 
 class BertMiniDataset(Dataset):
-	def __init__(self, data_dir, indices, labels, minidoc_size=5):
+	def __init__(self, data_dir, indices, labels, typ, minidoc_size=10):
 		self.data_dir = data_dir
 		self.minidoc_size = minidoc_size
 		self.labels = {indices[i] : labels[i] for i in range(len(labels))}
+		self.typ = typ
 
 	def __len__(self):
 		return len(self.labels)
 
 	def __getitem__(self, index):
-		features = np.load(self.data_dir + '/bert_processed/documents/' + str(index) + '.npy', allow_pickle=True)
+		features = np.load(self.data_dir + '/bert_processed/{}/'.format(self.typ) + str(index) + '.npy', allow_pickle=True)
 		label = self.labels[index]
 		indices, label = get_mini_indices(len(features), self.minidoc_size, label)
 		features = np.array([features[i] for i in indices])
 		return features, label
 
+def get_indices(data_dir):
+	train_files = os.listdir(data_dir + '/bert_processed/train/')
+	val_files = os.listdir(data_dir + '/bert_processed/val/')
+	test_files = os.listdir(data_dir + '/bert_processed/test/')
+	train_indices = [int(file[:-4]) for file in train_files if file.endswith('.npy')]
+	val_indices = [int(file[:-4]) for file in val_files if file.endswith('.npy')]
+	test_indices = [int(file[:-4]) for file in test_files if file.endswith('.npy')]
+	return train_indices, val_indices, test_indices
+
 def create_datasets(data_dir, oracles, types, sent_type, batch_size, mini=False):
 	labels, available_indices = [], []
-	for i, (t, o) in enumerate(list(zip(types, oracles))):
+	indices_train, indices_val, indices_test = get_indices(data_dir)
+	labels_train, labels_val, labels_test = [], [], []
+	indices_train = [i for i in indices_train if any([sent_type in t_ for t_ in types[i]])]
+	indices_val = [i for i in indices_val if any([sent_type in t_ for t_ in types[i]])]
+	indices_test = [i for i in indices_test if any([sent_type in t_ for t_ in types[i]])]
+	available_indices = sorted(indices_train + indices_test + indices_val)
+	summary_indices_test = []
+
+	for i in indices_train:
+		t, o = types[i], oracles[i]
 		for j, t_ in enumerate(t):
 			if(sent_type in t_):
-				labels.append(o[j])
-				available_indices.append(i)
+				labels_train.append(o[j])
+				break
+	for i in indices_val:
+		t, o = types[i], oracles[i]
+		for j, t_ in enumerate(t):
+			if(sent_type in t_):
+				labels_val.append(o[j])
+				break
+	for i in indices_test:
+		t, o = types[i], oracles[i]
+		for j, t_ in enumerate(t):
+			if(sent_type in t_):
+				labels_test.append(o[j])
+				summary_indices_test.append(j)
+				break
 
-	indices_train, indices_test, labels_train, labels_test = train_test_split(available_indices, labels, test_size=0.2)
-	indices_train, indices_val, labels_train, labels_val = train_test_split(indices_train, labels_train, test_size=0.25)
-	
 	BertDatasetType = BertMiniDataset if mini else BertDataset
 
 	# choose the training and test datasets
-	train_data = BertDatasetType(data_dir, indices_train, labels_train)
-	valid_data = BertDatasetType(data_dir, indices_val, labels_val)
-	test_data = BertDatasetType(data_dir, indices_test, labels_test)
+	train_data = BertDatasetType(data_dir, indices_train, labels_train, 'train')
+	valid_data = BertDataset(data_dir, indices_val, labels_val, 'val')
+	test_data = BertDataset(data_dir, indices_test, labels_test, 'test')
 	
 	# define samplers for obtaining training and validation batches
 	train_sampler = SubsetRandomSampler(indices_train)
@@ -126,8 +157,8 @@ def create_datasets(data_dir, oracles, types, sent_type, batch_size, mini=False)
 	
 	# load test data in batches
 	test_loader = torch.utils.data.DataLoader(test_data,
-												batch_size=batch_size,
+												batch_size=1,
 												sampler=test_sampler,
 												collate_fn=collate_batch)
 	
-	return train_loader, test_loader, valid_loader, set(available_indices), indices_test
+	return train_loader, test_loader, valid_loader, set(available_indices), indices_test, labels_test, summary_indices_test

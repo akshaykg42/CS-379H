@@ -22,24 +22,24 @@ if __name__ == '__main__':
 
 	print('Loading data...')
 	documents, summaries, oracles, types = load(DATA_DIR)
-	train_loader, test_loader, valid_loader, available_indices, indices_test = create_datasets(DATA_DIR, oracles, types, TYPE, BATCH_SIZE, MINI)
+	train_loader, test_loader, valid_loader, available_indices, indices_test, labels_test, ground_truths = create_datasets(DATA_DIR, oracles, types, TYPE, BATCH_SIZE, MINI)
 	for inputs, mask, targets in train_loader:
 		FEATURES = inputs[0].shape[1]
 		break
-	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
-	test_scores = [logits.cpu().detach().numpy() for logits in test(test_loader, num_features=FEATURES)]
+	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE, typ=TYPE)
+	test_scores = test(test_loader, num_features=FEATURES, typ=TYPE)[0].cpu().detach().numpy()
 
 	oracle_rouges = []
 	model_rouges = []
-	'''
+	oracle_rouges = []
+	model_rouges = []
+
 	for i, index in enumerate(indices_test):
-		document = documents[index]
-		summary = summaries[index]
-		oracle_index = oracles[index][TYPE]
+		document_sentences = documents[index]
+		summary_sentences = summaries[index]
+		oracle_index = labels_test[i]
 		model_scores = test_scores[i]
-		document_sentences = tokenizer.tokenize(document)
-		summary_sentences = tokenizer.tokenize(summary)
-		ground_truth_sentence = summary_sentences[TYPE]
+		ground_truth_sentence = summary_sentences[ground_truths[i]]
 		print('Ground Truth Sentence: {}\n'.format(ground_truth_sentence))
 		oracle_sentence = document_sentences[oracle_index]
 		model_best_sentence_indices = model_scores.flatten().argsort()[-5:][::-1]
@@ -69,5 +69,4 @@ if __name__ == '__main__':
 	print(avg_model_rouges)
 	print(min_model_rouges)
 	print(max_model_rouges)
-	'''
 

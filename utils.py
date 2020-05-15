@@ -11,6 +11,7 @@ import numpy as np
 import spacy
 import torch
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 from itertools import accumulate, permutations
 from transformers import BertTokenizer
 from rouge import Rouge
@@ -22,10 +23,17 @@ from allennlp.predictors.predictor import Predictor
 rouge = Rouge()
 rouge_type = 'rouge-1'
 rouge_metric = 'f'
-predictor = Predictor.from_path("../ner-model-2018.12.18.tar.gz")
+#predictor = Predictor.from_path("../ner-model-2018.12.18.tar.gz")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-sp = spacy.load('en')
+sp = spacy.load('en_core_web_sm')
+tags = {
+	'ALL': ['B-PER', 'I-PER', 'L-PER', 'B-ORG', 'I-ORG', 'L-ORG', 'B-LOC', 'I-LOC', 'L-LOC', 'B-MISC', 'I-MISC', 'L-MISC', 'U-PER', 'U-ORG', 'U-LOC', 'U-MISC'],
+	'PER': ['B-PER', 'I-PER', 'L-PER', 'U-PER'],
+	'ORG': ['B-ORG', 'I-ORG', 'L-ORG', 'U-ORG'],
+	'LOC': ['B-LOC', 'I-LOC', 'L-LOC', 'U-LOC'],
+	'MISC': ['B-MISC', 'I-MISC', 'L-MISC', 'U-MISC']
+}
 #stopwords = ["a", "about", "above", "after", "again", "against", "ain", "all", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "ll", "m", "ma", "me", "mightn", "mightn't", "more", "most", "mustn", "mustn't", "my", "myself", "needn", "needn't", "no", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she's", "should", "should've", "shouldn", "shouldn't", "so", "some", "such", "t", "than", "that", "that'll", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "ve", "very", "was", "wasn", "wasn't", "we", "were", "weren", "weren't", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "won", "won't", "wouldn", "wouldn't", "y", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "could", "he'd", "he'll", "he's", "here's", "how's", "i'd", "i'll", "i'm", "i've", "let's", "ought", "she'd", "she'll", "that's", "there's", "they'd", "they'll", "they're", "they've", "we'd", "we'll", "we're", "we've", "what's", "when's", "where's", "who's", "why's", "would"]
 #pcr_documents = [' '.join(tokenizer.tokenize(doc)[len(pcr_oracles[i]):]) if re.search('\W\s*¶\s*\d\s*\W', doc) is None else doc for i, doc in enumerate(pcr_documents)]
 
@@ -266,6 +274,27 @@ def remove_named_entities(documents):
 			new_doc.append(' '.join(reduced))
 		out.append(new_doc)
 	return out
+
+def create_test_train_val_split(data_dir):
+	documents, summaries, oracles, types = load(data_dir)
+	indices = list(range(len(summaries)))
+	indices_train, indices_test = train_test_split(indices, test_size=0.2)
+	indices_train, indices_val = train_test_split(indices_train, test_size=0.25)
+	for i in indices_train:
+		features = np.load(data_dir + '/processed/documents/' + str(i) + '.npy', allow_pickle=True)
+		np.save(data_dir + '/processed/train/' + str(i), features)
+		bert_features = np.load(data_dir + '/bert_processed/documents/' + str(i) + '.npy', allow_pickle=True)
+		np.save(data_dir + '/bert_processed/train/' + str(i), bert_features)
+	for i in indices_val:
+		features = np.load(data_dir + '/processed/documents/' + str(i) + '.npy', allow_pickle=True)
+		np.save(data_dir + '/processed/val/' + str(i), features)
+		bert_features = np.load(data_dir + '/bert_processed/documents/' + str(i) + '.npy', allow_pickle=True)
+		np.save(data_dir + '/bert_processed/val/' + str(i), bert_features)
+	for i in indices_test:
+		features = np.load(data_dir + '/processed/documents/' + str(i) + '.npy', allow_pickle=True)
+		np.save(data_dir + '/processed/test/' + str(i), features)
+		bert_features = np.load(data_dir + '/bert_processed/documents/' + str(i) + '.npy', allow_pickle=True)
+		np.save(data_dir + '/bert_processed/test/' + str(i), bert_features)		
 
 
 def load(data_dir):

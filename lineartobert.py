@@ -39,7 +39,14 @@ if __name__ == '__main__':
 	train(train_loader, valid_loader, num_features=FEATURES, n_epochs=EPOCHS, batch_size=BATCH_SIZE)
 	test(test_loader, num_features=FEATURES)
 
-	labels = [oracles[i][TYPE] for i in available_indices]
+	available_indices_set = set()
+	labels = []
+	for i in range(len(available_indices)):
+		idx = available_indices[i]
+		if(idx not in available_indices_set):
+			available_indices_set.add(idx)
+			labels.extend([oracles[idx][j] for j in range(len(types[idx])) if TYPE in types[idx][j]])
+
 	dataset = SummarizationDataset(DATA_DIR, available_indices, labels)
 	sampler = SubsetSequentialSampler(available_indices)
 
