@@ -3,9 +3,9 @@ import torch.nn as nn
 
 torch.manual_seed(1)
 	
-class OracleSelectorModel(nn.Module):
+class LinearModel(nn.Module):
 	def __init__(self, input_dim, hidden=512):
-		super(OracleSelectorModel, self).__init__()
+		super(LinearModel, self).__init__()
 		self.linear = nn.Linear(input_dim, 1)
 		#self.ReLU = nn.ReLU()
 		#self.linear2 = nn.Linear(hidden, 1)
