@@ -9,8 +9,9 @@ import string
 import argparse
 import nltk.data
 import numpy as np
-from beam import *
+from tqdm import tqdm
 from rouge import Rouge
+from utils.beam import *
 from nltk.corpus import stopwords
 from sklearn.cluster import KMeans
 from transformers import BertTokenizer
@@ -44,7 +45,7 @@ def split_doc(doc):
 def load_data(directory):
 	data = list()
 	files = list()
-	for name in os.listdir(directory):
+	for name in tqdm(os.listdir(directory)):
 		try:
 			filename = directory + '/' + name
 			datum = load_doc(filename)
@@ -198,7 +199,7 @@ def get_rouge(hypothesis, reference, rougetype, scoretype):
 
 def get_vanilla_oracles(documents, summaries):
 	oracles = []
-	for document, summary in list(zip(documents, summaries)):
+	for document, summary in tqdm(list(zip(documents, summaries))):
 		document_sentences = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in document]
 		summary_sentences = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in summary]
 		oracle = []
@@ -216,7 +217,7 @@ def get_vanilla_oracles(documents, summaries):
 
 def optimize_beam_oracles(documents, summaries, oracles):
 	optimized_oracles = []
-	for document, summary, oracle_indices in list(zip(documents, summaries, oracles)):
+	for document, summary, oracle_indices in tqdm(list(zip(documents, summaries, oracles))):
 		best_option = oracle_indices
 		if(len(oracle_indices) <= 9):
 			options = list(permutations(oracle_indices))
@@ -232,7 +233,7 @@ def optimize_beam_oracles(documents, summaries, oracles):
 #todo: functionality to control allowing duplicate sentences?
 def get_beam_oracles(documents, summaries):
 	oracles = []
-	for document, summary in list(zip(documents, summaries)):
+	for document, summary in tqdm(list(zip(documents, summaries))):
 		document = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in document]
 		summary = [' '.join([word.lemma_ for word in sp(sentence)]) for sentence in summary]
 		beam = Beam(15)

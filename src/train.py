@@ -9,7 +9,7 @@ from models.data_loader import *
 from transformers import get_linear_schedule_with_warmup
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 
-def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, num_features, patience=7):
+def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, patience=7):
 	'''
 	This is the main training function.
 	'''
@@ -25,7 +25,11 @@ def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, num_fe
 	# to track the average training loss per epoch as the model trains
 	avg_train_losses = []
 	# to track the average validation loss per epoch as the model trains
-	avg_valid_losses = [] 
+	avg_valid_losses = []
+
+	for inputs, mask, targets in train_loader:
+		num_features = inputs[0].shape[1]
+		break
 
 	loss = nn.NLLLoss()
 	model = OracleSelectorModel(num_features).cuda()
@@ -317,7 +321,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	dataset_name, model_type, topic, batch_size, epochs, mini = \
-		args.dataset_name, args.model_type, args.topic, args.batch_size, args.epoch, args.mini
+		args.dataset_name, args.model_type, args.topic, args.batch_size, args.epochs, args.mini
 
 	train_loader = create_loader(dataset_name, model_type, 'train', topic, batch_size, mini)
 	valid_loader = create_loader(dataset_name, model_type, 'valid', topic, batch_size, mini)
@@ -327,13 +331,11 @@ if __name__ == '__main__':
 		os.makedirs(save_dir)
 
 	if(model_type == 'linear'):
-		for inputs, mask, targets in train_loader:
-			num_features = inputs[0].shape[1]
-			break
-		train_linear(train_loader, valid_loader, epochs, batch_size, topic, num_features)
+		train_fn = train_linear
 	elif(model_type == 'bert'):
-		train_bert(train_loader, valid_loader, epochs, batch_size, topic)
+		train_fn = train_bert
 
+	train_fn(train_loader, valid_loader, epochs, batch_size, topic)
 
 
 

@@ -144,7 +144,7 @@ def create_loader(dataset_name, model_type, dataset_type, topic, batch_size, min
 
 	if(model_type == 'linear'):
 		collate_fn = collate_batch_linear
-	elif(model_type = 'bert'):
+	elif(model_type == 'bert'):
 		collate_fn = collate_batch_bert
 	
 	# load training data in batches
