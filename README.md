@@ -1,7 +1,7 @@
 
 # Topic-Focused Extractive Summarization
 
-**This code is for paper `Topic-Focused Extractive Summarization` **(https://apps.cs.utexas.edu/apps/sites/default/files/tech_reports/Akshay_Honors_Thesis.pdf)
+**This code is for paper:** `Topic-Focused Extractive Summarization` (https://apps.cs.utexas.edu/apps/sites/default/files/tech_reports/Akshay_Honors_Thesis.pdf)
 
 **Python version**: This code is in Python3.7
 
