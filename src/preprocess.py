@@ -29,12 +29,15 @@ word_tokenizer = nltk.word_tokenize
 sentence_tokenizer = nltk.sent_tokenize
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
 
+# Load a single file
 def load_doc(filename):
 	file = open(filename, encoding='utf-8')
 	text = file.read()
 	file.close()
 	return text
 
+# Split file into document and summary
+# NOTE: We assume the CNN/DM story format for document/summary pairs fed into the system
 def split_doc(doc):
 	index = doc.find('@highlight')
 	document, summary = doc[:index], doc[index:].split('@highlight')
@@ -42,6 +45,7 @@ def split_doc(doc):
 	summary = [h.strip() for h in summary if len(h) > 0]
 	return document, summary
 
+# Load all files in directory
 def load_data(directory):
 	data = list()
 	files = list()
@@ -56,6 +60,7 @@ def load_data(directory):
 			print(name)
 	return data, files
 
+# Creates 60/20/20 train/test/val split
 def create_test_train_val_split(bert_data, linear_data):
 	indices_train, indices_test = train_test_split(list(range(len(bert_data))), test_size=0.2)
 	indices_train, indices_val = train_test_split(indices_train, test_size=0.25)
@@ -70,6 +75,7 @@ def create_test_train_val_split(bert_data, linear_data):
 
 	return (bert_train, bert_test, bert_val), (linear_train, linear_test, linear_val), (indices_train, indices_test, indices_val)
 
+# Extract documents and summaries from .story files and writes them to json files in ../data/{dataset_name}/raw
 def jsonify(raw_path, dataset_name):
 	data, files = load_data(raw_path)
 	documents = [datum['document'] for datum in data]
@@ -84,6 +90,7 @@ def jsonify(raw_path, dataset_name):
 	with open(write_dir + 'summaries.json', 'w') as outfile:
 		json.dump(summaries, outfile)
 
+# Simple preprocessing - remove non alphanum/space and compress whitespace
 def preprocess_sentence(sentence):
 	# Remove non alphanumeric/space
 	sentence = re.sub(r'[^a-zA-Z\d\s]', ' ', sentence)
@@ -96,6 +103,7 @@ def preprocess_sentence(sentence):
 	# tokenized = word_tokenizer(sentence)
 	# return ' '.join(tokenized)
 
+# Vector representation of sentence length
 # "Capped" at 64 i.e. vector length is 7 (for 1, 2, 4, 8, 16 , 32, 64+)
 def bucketize_sent_lens(number):
 	binary = [int(x) for x in bin(number)[2:]]
@@ -132,6 +140,7 @@ def get_linear_features(documents):
 							max_df=0.99, stop_words=stopwords.words('english'),
 							ngram_range=(1, 2))
 
+	# Get BoW features
 	feats_bow = vectorizer.fit_transform(preprocessed_documents_flat).toarray()
 
 	# Adding features for sentence length and position
@@ -155,11 +164,13 @@ def tokenize_bert(documents):
 				add_special_tokens = True,
 				max_length = 512,
 				return_tensors = 'pt'
-			)
+			)[0]
 			tokenized_sentences.append(encoded_sent)
 		tokenized_documents.append(tokenized_sentences)
 	return tokenized_documents
 
+# Extract linear features and create BERT tokens for dataset and write them to ../data/{dataset_name}/linear/ and ../data/{dataset_name}/bert/
+# Also creates train test val split - if overwrite is set and split already exists, then it is overwritten
 def bert_tokens_and_linear_features(dataset_name, overwrite):
 	folders = ['linear/', 'bert/']
 	subfolders = ['train/', 'test/', 'val/']
@@ -167,6 +178,7 @@ def bert_tokens_and_linear_features(dataset_name, overwrite):
 	with open(json_path) as json_file:
 		documents = json.load(json_file)
 
+	# Create all output dirs, if features/tokens already exist and overwrite is false then abort
 	dataset_path = '../data/{}/'.format(dataset_name)
 	for folder in folders:
 		for subfolder in subfolders:
@@ -180,23 +192,29 @@ def bert_tokens_and_linear_features(dataset_name, overwrite):
 			for file in files:
 				os.remove(file)
 
+	# Get features/tokens
 	bert_tokens = tokenize_bert(documents)
 	linear_features = get_linear_features(documents)
 
+	# Create train/test/val split
 	bert_data, linear_data, indices = create_test_train_val_split(bert_tokens, linear_features)
 
+	# Write everything out
 	for subfolder, subindices, linear_sub, bert_sub in list(zip(subfolders, indices, linear_data, bert_data)):
 		for i, index in enumerate(subindices):
 			torch.save(linear_sub[i], dataset_path + 'linear/' + subfolder + str(index) + '.pt')
 			torch.save(bert_sub[i], dataset_path + 'bert/' + subfolder + str(index) + '.pt')
 
-	with open(dataset_path + 'train_test_split.txt', 'w') as outfile:
-		train_indices, test_indices, val_indices = indices
-		outfile.write(str(train_indices) + '\n' + str(test_indices) + '\n' + str(val_indices))
+	# Write the train/test/split to a file for later use
+	# with open(dataset_path + 'train_test_split.txt', 'w') as outfile:
+	# 	train_indices, test_indices, val_indices = indices
+	# 	outfile.write(str(train_indices) + '\n' + str(test_indices) + '\n' + str(val_indices))
 
 def get_rouge(hypothesis, reference, rougetype, scoretype):
 	return rouge.get_scores(hypothesis, reference)[0][rougetype][scoretype]
 
+# For each summary sentence, find best corresponding document sentence and use that
+# TODO: Configurability for whether to allow repeat sentences, currently set to DON'T
 def get_vanilla_oracles(documents, summaries):
 	oracles = []
 	for document, summary in tqdm(list(zip(documents, summaries))):
@@ -215,22 +233,27 @@ def get_vanilla_oracles(documents, summaries):
 		oracles.append(oracle)
 	return oracles
 
+# Try all permutations for oracle indices to see which maximizes pairwise ROUGE with summary sentences
 def optimize_beam_oracles(documents, summaries, oracles):
 	optimized_oracles = []
 	for document, summary, oracle_indices in tqdm(list(zip(documents, summaries, oracles))):
-		best_option = oracle_indices
-		if(len(oracle_indices) <= 9):
-			options = list(permutations(oracle_indices))
-			best_score = sum([get_rouge(summary[i], document[best_option[i]], rouge_type, rouge_metric) for i in range(len(summary))])
-			for option in options:
-				score = sum([get_rouge(summary[i], document[option[i]], rouge_type, rouge_metric) for i in range(len(summary))])
-				if(score > best_score):
-					best_score = score
-					best_option = option
-		optimized_oracles.append(best_option)
+		try:
+			best_option = oracle_indices
+			if(len(oracle_indices) <= 9):
+				options = list(permutations(oracle_indices))
+				best_score = sum([get_rouge(summary[i], document[best_option[i]], rouge_type, rouge_metric) for i in range(len(summary))])
+				for option in options:
+					score = sum([get_rouge(summary[i], document[option[i]], rouge_type, rouge_metric) for i in range(len(summary))])
+					if(score > best_score):
+						best_score = score
+						best_option = option
+			optimized_oracles.append(best_option)
+		except ValueError:
+			optimized_oracles.append(oracle_indices)
 	return optimized_oracles
 
-#todo: functionality to control allowing duplicate sentences?
+# Iteratively construct oracle using beam search, optimizing using ROUGE for currently constructed oracle and summary prefixes
+# TODO: Configurability for whether to allow repeat sentences
 def get_beam_oracles(documents, summaries):
 	oracles = []
 	for document, summary in tqdm(list(zip(documents, summaries))):
@@ -255,6 +278,7 @@ def get_beam_oracles(documents, summaries):
 		oracles.append(indices)
 	return oracles
 
+# Construct oracle extractive summaries and save them to ../data/{dataset_name}/raw/oracles.json
 def construct_oracles(dataset_name, vanilla_oracles):
 	json_path = '../data/{}/raw/'.format(dataset_name)
 	with open(json_path + 'documents.json') as json_file:
@@ -271,26 +295,31 @@ def construct_oracles(dataset_name, vanilla_oracles):
 	with open(json_path + 'oracles.json', 'w') as outfile:
 		json.dump(oracles, outfile)
 
+# Perform clustering to get topic representations and save them to ../data/{dataset_name}/raw/topics.json
 def get_topic_representations(dataset_name):
 	json_path = '../data/{}/raw/summaries.json'.format(dataset_name)
 	with open(json_path) as json_file:
 		summaries = json.load(json_file)
 
+	# "Flatten" summaries
 	summaries_flat = []
 	for summary in summaries:
 		summaries_flat.extend(summary)
 
+	# Create tf-idf based representation for each sentence
 	tfidf_vectorizer = TfidfVectorizer(max_df=0.95, max_features=10000,
                                  min_df=2, stop_words=stopwords.words('english'),
                                  use_idf=True, lowercase=True,
                                  ngram_range=(1,3))
 
+	# Fit to the summary sentences
 	tfidf_matrix = tfidf_vectorizer.fit_transform(summaries_flat)
 
 	#TODO: Make interface for users to seed clusters - these values are hardcoded for earthquakes
 	topic_samples = [[4, 12, 1012, 1014, 897, 795, 770, 1408, 754, 808, 819, 900, 909, 952, 1215],[1423, 1521, 1633, 1649, 1705, 1821, 1909, 49, 171],[377, 401, 512, 536, 624, 889, 1396, 1518, 552, 1312, 592],[839, 892, 1170, 1175, 1242, 1279, 1287, 1314, 1458, 1482, 1642, 1680, 1475, 1670, 1691, 1889],[1065, 1234, 1372, 1532, 1872, 334, 1147, 1253, 1491, 1679],[1822, 1846, 1511, 1631, 1838, 1910, 41, 348, 388, 415, 546, 646, 670, 419, 787, 1560, 1704, 138, 9, 81],[686, 674, 721, 783, 872, 874, 1124, 1132, 1138, 1194, 1332, 1338, 1340, 167, 237, 427]]
 	num_topics = len(topic_samples)
 
+	# Initialize clustering centroids using user-provided seeds
 	topic_seed_centroids = []
 	for topic_sample in topic_samples:
 		topic_vectors = [tfidf_matrix[index] for index in topic_sample]
@@ -301,12 +330,14 @@ def get_topic_representations(dataset_name):
 		seed_centroid = km.cluster_centers_[0]
 		topic_seed_centroids.append(seed_centroid)
 
+	# Initialize k-means using centroids created
 	km = KMeans(n_clusters=num_topics, init=np.array(topic_seed_centroids))
 	km.fit(tfidf_matrix)
 
 	sentences_to_topics = {}
 	sentences_by_topic = {}
 
+	# Build dictionaries that map each sentence to its topic, and each topic to all sentences of that topic
 	for topic in range(num_topics):
 		indices = [index for index, label in enumerate(km.labels_) if label == topic]
 		topic_sentences = []
@@ -315,6 +346,7 @@ def get_topic_representations(dataset_name):
 			topic_sentences.append(summaries_flat[index])
 		sentences_by_topic[topic] = topic_sentences
 
+	# Write sentences per topic to files for later investigation
 	# topic_list_path = '../data/' + dataset_name + '/'
 	# for topic in sentences_by_topic:
 	# 	with open(topic_list_path + 'topic {} sentences.txt'.format(topic), 'w') as f:
@@ -331,7 +363,9 @@ if __name__ == '__main__':
 	parser.add_argument('-raw_path', default='')
 	parser.add_argument('-dataset_name')
 	parser.add_argument('-mode')
+	# Whether or not to overwrite existing train/test/val split while extracting features/tokens
 	parser.add_argument('-overwrite', action='store_true', default=False)
+	# Construct oracles by optimizing for individual sentences rather than the entire summary
 	parser.add_argument('-vanilla_oracles', action='store_true', default=False)
 	args = parser.parse_args()
 

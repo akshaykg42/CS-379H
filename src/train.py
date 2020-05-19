@@ -1,6 +1,8 @@
 #train -> specify dataset name, linear or bert, topic, batch size, # epochs, mini
 #have functions for either in the same file trainer.py in models/
 import os
+import time
+import datetime
 import argparse
 from torch import nn, optim
 from models.linear import *
@@ -9,10 +11,8 @@ from models.data_loader import *
 from transformers import get_linear_schedule_with_warmup
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 
+# Patience is the number of consecutive iterations with no improvement in validation loss before training is aborted
 def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, patience=7):
-	'''
-	This is the main training function.
-	'''
 	print ('[I] Start training')
 	"""
 	Load the training data
@@ -27,20 +27,23 @@ def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, patien
 	# to track the average validation loss per epoch as the model trains
 	avg_valid_losses = []
 
+	# Get number of features
 	for inputs, mask, targets in train_loader:
 		num_features = inputs[0].shape[1]
 		break
 
 	loss = nn.NLLLoss()
-	model = OracleSelectorModel(num_features).cuda()
-	early_stopping = EarlyStopping(train_loader.dataset_name, patience=patience, verbose=True)
+	model = LinearModel(num_features).cuda()
+	early_stopping = EarlyStopping(train_loader.dataset.dataset_name, patience=patience, verbose=True)
 
 	optimizer = optim.Adam(model.parameters(), lr = 1e-2)
 	# optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
+	# Train for some epochs
 	for epoch in range(1, n_epochs + 1):
 		model.train()
 
+		# Get batches from training dataloader
 		for batch, (inputs, mask, targets) in enumerate(train_loader):
 			optimizer.zero_grad()
 			scores, preds = model(inputs, mask)
@@ -51,11 +54,13 @@ def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, patien
 
 		model.eval()
 
+		# Get batches from validation dataloader
 		for inputs, mask, targets in valid_loader:
 			scores, preds = model(inputs, mask)
 			valid_loss = loss(scores, targets)
 			valid_losses.append(valid_loss.item())
 
+		# Calculate training/validation loss at each epoch
 		train_loss = np.average(train_losses)
 		valid_loss = np.average(valid_losses)
 		avg_train_losses.append(train_loss)
@@ -63,13 +68,14 @@ def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, patien
 
 		epoch_len = len(str(n_epochs))
 		
+		# Logging
 		print_msg = (f'[{epoch:>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
 					 f'train_loss: {train_loss:.5f} ' +
 					 f'valid_loss: {valid_loss:.5f}')
 
 		print(print_msg)
 		
-		# clear lists to track next epoch
+		# Clear lists to track next epoch
 		train_losses = []
 		valid_losses = []
 		
@@ -83,10 +89,12 @@ def train_linear(train_loader, valid_loader, n_epochs, batch_size, topic, patien
 
 	print ('[I] Training finished')
 
-	save_path = '../models/{}/linear'.format(train_loader.dataset_name)
+	save_path = '../models/{}/linear'.format(train_loader.dataset.dataset_name)
 
+	# Load last checkpoint and save it
 	model.load_state_dict(torch.load('{}/checkpoint.pt'.format(save_path)))
-	# Save the trained model
+
+	print("Saving model to %s" % '{}/{}.th'.format(save_path, topic))
 	torch.save(model.state_dict(), '{}/{}.th'.format(save_path, topic))
 
 def flat_accuracy(preds, labels):
@@ -300,7 +308,7 @@ def train_bert(train_loader, valid_loader, n_epochs, batch_size, topic):
 	print("")
 	print("Training complete!")
 
-	save_path = '../models/{}/bert/{}/'.format(train_loader.dataset_name, topic)
+	save_path = '../models/{}/bert/{}/'.format(train_loader.dataset.dataset_name, topic)
 
 	if not os.path.exists(save_path):
 		os.makedirs(save_path)
@@ -309,13 +317,30 @@ def train_bert(train_loader, valid_loader, n_epochs, batch_size, topic):
 
 	model.save_pretrained(save_path)
 
+
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-dataset_name')
 	parser.add_argument('-model_type')
-	parser.add_argument('-topic')
+	# Models are trained per topic
+	parser.add_argument('-topic', type=int)
+	'''
+	Recommended batch sizes:
+	BERT: 1
+	Linear: 16
+	'''
 	parser.add_argument('-batch_size', type=int)
+	'''
+	Recommended number of epochs:
+	BERT: 4
+	Linear: 100
+	'''
 	parser.add_argument('-epochs', type=int)
+	'''
+	If BERT runs out of memory even with a batch size of 1, try using mini
+	This will "reduce" each document to K(=10) sentences including the oracle
+	For more details, seee src/models/data_loader.py
+	'''
 	parser.add_argument('-m', '--mini', action='store_true', default=False)
 
 	args = parser.parse_args()
@@ -324,12 +349,13 @@ if __name__ == '__main__':
 		args.dataset_name, args.model_type, args.topic, args.batch_size, args.epochs, args.mini
 
 	train_loader = create_loader(dataset_name, model_type, 'train', topic, batch_size, mini)
-	valid_loader = create_loader(dataset_name, model_type, 'valid', topic, batch_size, mini)
+	valid_loader = create_loader(dataset_name, model_type, 'val', topic, batch_size, mini)
 
 	save_dir = '../models/{}/{}/'.format(dataset_name, model_type)
 	if not os.path.exists(save_dir):
 		os.makedirs(save_dir)
 
+	# Set training function based on model type
 	if(model_type == 'linear'):
 		train_fn = train_linear
 	elif(model_type == 'bert'):
