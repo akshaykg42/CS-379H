@@ -317,7 +317,7 @@ def ranking_eval(dataloader, predict_fn, topics, documents, summaries, oracles, 
 def get_all_topics(dataset_name, model_type):
 	model_files = os.listdir('../models/{}/{}/'.format(dataset_name, model_type))
 	if(model_type == 'linear'):
-		return sorted([int(file[:-3]) for file in model_files])
+		return sorted([int(file[:-3]) for file in model_files if file != 'checkpoint.pt'])
 	elif(model_type == 'bert'):
 		return sorted([int(file) for file in model_files])
 
